@@ -8,18 +8,15 @@ const RequestSchema = z.object({
   objectives: z.string().min(1),
 });
 
-
 const Objective = z.object({
   name: z.string(),
   description: z.string(),
-  priority: z.number(),
-});
-    
-const OpenIAResponseSchema = z.object({
-  context: z.string(),
-  objectives: z.array(Objective),
+  priority: z.number().min(1).max(5),
 });
 
+const OpenIAResponseSchema = z.object({
+  objectives: z.array(Objective),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +25,16 @@ export async function POST(req: NextRequest) {
 
     const prompt = `You are an assistant helping to prepare a call. Given the user's context and raw objectives, rewrite the objectives as a clear, concise, prioritized checklist. Each item should be actionable and unambiguous. Also extract key constraints and risks.
 
-Context:\n${context}\n\nRaw Objectives:\n${objectives}\n\nReturn JSON with keys: objectives (array of strings), constraints (array of strings), risks (array of strings).`;
+Context:
+${context}
+
+Raw Objectives:
+${objectives}
+
+Return JSON with:
+- objectives: array of objects with {name: string, description: string, priority: number (1-5 where 1 is highest)}
+- constraints: array of constraint strings (optional)
+- risks: array of risk strings (optional)`;
 
     const openai = getOpenAIClient();
     const response = await openai.responses.create({
@@ -40,13 +46,32 @@ Context:\n${context}\n\nRaw Objectives:\n${objectives}\n\nReturn JSON with keys:
     });
 
     const text = response.output_text || "{}";
-    const parsed = JSON.parse(text);
 
-    return new Response(JSON.stringify({ ok: true, data: parsed }), {
+    // Clean the text to remove any potential markdown code blocks or extra whitespace
+    let cleanedText = text.trim();
+    if (cleanedText.startsWith("```json")) {
+      cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+    } else if (cleanedText.startsWith("```")) {
+      cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("Failed to parse OpenAI response:", cleanedText);
+      throw new Error("Failed to parse AI response as JSON");
+    }
+
+    // Validate with schema
+    const validated = OpenIAResponseSchema.parse(parsed);
+
+    return new Response(JSON.stringify({ ok: true, data: validated }), {
       status: 200,
       headers: { "content-type": "application/json" },
     });
   } catch (err: unknown) {
+    console.error("Error in parse-objectives:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(JSON.stringify({ ok: false, error: message }), {
       status: 400,
@@ -54,5 +79,3 @@ Context:\n${context}\n\nRaw Objectives:\n${objectives}\n\nReturn JSON with keys:
     });
   }
 }
-
-
