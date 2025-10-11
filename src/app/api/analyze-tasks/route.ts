@@ -97,17 +97,21 @@ ${existingInsightsText}
 # YOUR RESPONSIBILITIES
 
 ## 1. TASK STATUS ANALYSIS
-For each task in the list above, carefully determine if it has been completed based on the conversation.
+For each task in the list above, carefully determine if it has been completed based on the conversation. As you can see here, they are kinda like topics to go over - so mark them as completed if the topic was substantially discussed or demonstrated.
 
 **Completion Criteria (mark as completed if ANY of these apply):**
 - Task is explicitly marked as done, finished, completed, or accomplished
 - Clear evidence that the task's objective has been fully achieved (e.g., "sent the email", "uploaded the file", "called the client")
 - Someone confirms the task is complete using past tense or completion language (e.g., "I did X", "finished X", "X is ready", "X is sent")
 - Someone is showing off, demonstrating, or presenting the completed work (e.g., "look at this", "here's what I made", "check out", "let me show you")
-
-**NOT Completed (only mark as incomplete if):**
-- No mention of the task at all in the conversation
-- Clear indication that the task failed or wasn't completed
+- **LOOSE CRITERIA - Mark as completed if:**
+  - Task is discussed in detail with specific examples or demonstrations
+  - Someone explains how the task was accomplished or what was done
+  - Task objective is clearly addressed or covered in the conversation
+  - Someone mentions working on or dealing with the task successfully
+  - Task is referenced as something that has been handled or resolved
+  - Any substantive discussion that indicates the task's purpose has been fulfilled
+  - Task is briefly mentioned
 
 **For each task provide:**
 - \`id\`: The exact task ID from the list above

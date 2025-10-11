@@ -590,27 +590,19 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                   {insights.map((insight, index) => (
                     <div
                       key={insight.id}
-                      style={{ animationDelay: `${index * 100}ms` }}
                       className={`
                         p-4 rounded-lg border
                         transition-all duration-500 ease-out
-                        animate-in fade-in slide-in-from-right
                         hover:scale-[1.02] hover:shadow-lg
                         ${getInsightColor(insight.type)}
                       `}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="animate-in zoom-in duration-300" style={{ animationDelay: `${index * 100 + 150}ms` }}>
-                          {getInsightIcon(insight.type)}
-                        </div>
+                        <div>{getInsightIcon(insight.type)}</div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-medium animate-in fade-in slide-in-from-left duration-300" style={{ animationDelay: `${index * 100 + 200}ms` }}>
-                            {insight.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-1 animate-in fade-in duration-500" style={{ animationDelay: `${index * 100 + 300}ms` }}>
-                            {insight.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2 animate-in fade-in duration-300" style={{ animationDelay: `${index * 100 + 400}ms` }}>
+                          <h3 className="text-base font-medium">{insight.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{insight.description}</p>
+                          <div className="flex items-center gap-2 mt-2">
                             <Clock className="w-3 h-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">{new Date(insight.timestamp).toLocaleTimeString()}</span>
                           </div>
@@ -638,14 +630,12 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {actionItems.map((item, index) => (
+                  {actionItems.map((item) => (
                     <div
                       key={item.id}
-                      style={{ animationDelay: `${index * 100}ms` }}
                       className={`
                         p-4 rounded-lg border
                         transition-all duration-500 ease-out
-                        animate-in fade-in slide-in-from-right
                         hover:scale-[1.02] hover:shadow-lg
                         ${item.completed ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75 scale-[0.98]" : "bg-background border-border hover:border-primary/50"}
                       `}
@@ -685,13 +675,11 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
         <div>
           <h2 className="text-lg font-semibold mb-4">Objectives</h2>
           <div className="space-y-3">
-            {objectives.map((objective, index) => (
+            {objectives.map((objective) => (
               <div
                 key={objective.id}
-                style={{ animationDelay: `${index * 50}ms` }}
                 className={`
                   p-4 rounded-lg border transition-all duration-700 ease-out
-                  animate-in fade-in slide-in-from-right
                   ${
                     objective.completed
                       ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 scale-[0.98] opacity-90 shadow-sm shadow-green-500/20"
