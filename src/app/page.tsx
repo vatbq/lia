@@ -8,7 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { saveCall } from "@/lib/storage";
 
 type Objective = {
@@ -20,16 +27,24 @@ type Objective = {
 
 const FormSchema = z.object({
   name: z.string().min(1),
-  context: z.string().min(10, "Please add more context (min 10 chars)").max(2000),
-  objectives: z.string().min(10, "Please detail the objectives (min 10 chars)").max(2000),
+  context: z
+    .string()
+    .min(10, "Please add more context (min 10 chars)")
+    .max(2000),
+  objectives: z
+    .string()
+    .min(10, "Please detail the objectives (min 10 chars)")
+    .max(2000),
 });
 
 export default function Home() {
   const router = useRouter();
   const [context, setContext] = useState(
-    "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter."
+    "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.",
   );
-  const [objectives, setObjectives] = useState("1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics");
+  const [objectives, setObjectives] = useState(
+    "1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics",
+  );
   const [name, setName] = useState("Q4 Strategy Planning");
   const [loading, setLoading] = useState(false);
   const [parsedObjectives, setParsedObjectives] = useState<Objective[]>([]);
@@ -37,11 +52,21 @@ export default function Home() {
 
   // For editing objectives
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Objective>({ id: "", name: "", description: "", priority: 1 });
+  const [editForm, setEditForm] = useState<Objective>({
+    id: "",
+    name: "",
+    description: "",
+    priority: 1,
+  });
 
   // For adding new objectives
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newObjective, setNewObjective] = useState<Objective>({ id: "", name: "", description: "", priority: 1 });
+  const [newObjective, setNewObjective] = useState<Objective>({
+    id: "",
+    name: "",
+    description: "",
+    priority: 1,
+  });
 
   // Helper to clamp priority between 1 and 5
   function clampPriority(value: string | number): number {
@@ -67,13 +92,15 @@ export default function Home() {
     {
       id: uuidv4(),
       name: "Assign Ownership",
-      description: "Assign clear ownership and responsibilities for each Q4 feature",
+      description:
+        "Assign clear ownership and responsibilities for each Q4 feature",
       priority: 2,
     },
     {
       id: uuidv4(),
       name: "Set Timelines",
-      description: "Establish realistic timelines and milestones for Q4 deliverables",
+      description:
+        "Establish realistic timelines and milestones for Q4 deliverables",
       priority: 2,
     },
     {
@@ -102,8 +129,11 @@ export default function Home() {
 
     // Check if using default values
     const isDefaultContext =
-      context === "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.";
-    const isDefaultObjectives = objectives === "1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics";
+      context ===
+      "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.";
+    const isDefaultObjectives =
+      objectives ===
+      "1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics";
 
     if (isDefaultContext && isDefaultObjectives) {
       // Use mock data for default values
@@ -121,10 +151,12 @@ export default function Home() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || "Request failed");
       // Add UUIDs to objectives from API
-      const objectivesWithIds = (data.data.objectives || []).map((obj: Omit<Objective, "id">) => ({
-        id: uuidv4(),
-        ...obj,
-      }));
+      const objectivesWithIds = (data.data.objectives || []).map(
+        (obj: Omit<Objective, "id">) => ({
+          id: uuidv4(),
+          ...obj,
+        }),
+      );
       setParsedObjectives(objectivesWithIds);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -161,7 +193,10 @@ export default function Home() {
       return;
     }
     const updated = [...parsedObjectives];
-    updated[editingId] = { ...editForm, priority: clampPriority(editForm.priority) };
+    updated[editingId] = {
+      ...editForm,
+      priority: clampPriority(editForm.priority),
+    };
     setParsedObjectives(updated);
     setEditingId(null);
     setError(null);
@@ -187,27 +222,47 @@ export default function Home() {
             </Button>
           </div>
           <h1 className="text-4xl font-bold tracking-tight">LIA</h1>
-          <p className="mt-2 text-lg text-muted-foreground">Listen, Insight, Act</p>
+          <p className="mt-2 text-lg text-muted-foreground">
+            Listen, Insight, Act
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">Pre setup call</p>
         </div>
         <Card>
           <CardHeader>
             <CardTitle>Prepare your call</CardTitle>
-            <CardDescription>Share context and objectives. We'll clarify them before starting the call.</CardDescription>
+            <CardDescription>
+              Share context and objectives. We'll clarify them before starting
+              the call.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={onSubmit}>
               <div className="grid gap-2">
                 <Label htmlFor="name">Call title (optional)</Label>
-                <Input id="name" placeholder="Quarterly strategy sync" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input
+                  id="name"
+                  placeholder="Quarterly strategy sync"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="context">Context</Label>
-                <Textarea id="context" placeholder="Background, who is involved, current state..." value={context} onChange={(e) => setContext(e.target.value)} />
+                <Textarea
+                  id="context"
+                  placeholder="Background, who is involved, current state..."
+                  value={context}
+                  onChange={(e) => setContext(e.target.value)}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="objectives">Objectives</Label>
-                <Textarea id="objectives" placeholder="What you want to achieve in this call..." value={objectives} onChange={(e) => setObjectives(e.target.value)} />
+                <Textarea
+                  id="objectives"
+                  placeholder="What you want to achieve in this call..."
+                  value={objectives}
+                  onChange={(e) => setObjectives(e.target.value)}
+                />
               </div>
               <div className="flex items-center gap-3">
                 <Button type="submit" disabled={loading}>
@@ -216,7 +271,11 @@ export default function Home() {
               </div>
             </form>
 
-            {error && <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">{error}</div>}
+            {error && (
+              <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                {error}
+              </div>
+            )}
 
             {isAddingNew && parsedObjectives.length === 0 && (
               <div className="mt-6">
@@ -224,15 +283,47 @@ export default function Home() {
                 <div className="rounded-md border border-primary p-3 space-y-2">
                   <div>
                     <Label className="text-xs">Name</Label>
-                    <Input value={newObjective.name} onChange={(e) => setNewObjective({ ...newObjective, name: e.target.value })} placeholder="Objective name" className="mt-1" />
+                    <Input
+                      value={newObjective.name}
+                      onChange={(e) =>
+                        setNewObjective({
+                          ...newObjective,
+                          name: e.target.value,
+                        })
+                      }
+                      placeholder="Objective name"
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label className="text-xs">Description</Label>
-                    <Textarea value={newObjective.description} onChange={(e) => setNewObjective({ ...newObjective, description: e.target.value })} placeholder="Objective description" className="mt-1" />
+                    <Textarea
+                      value={newObjective.description}
+                      onChange={(e) =>
+                        setNewObjective({
+                          ...newObjective,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Objective description"
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label className="text-xs">Priority (1-5)</Label>
-                    <Input type="number" min="1" max="5" value={newObjective.priority} onChange={(e) => setNewObjective({ ...newObjective, priority: clampPriority(e.target.value) })} className="mt-1" />
+                    <Input
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={newObjective.priority}
+                      onChange={(e) =>
+                        setNewObjective({
+                          ...newObjective,
+                          priority: clampPriority(e.target.value),
+                        })
+                      }
+                      className="mt-1"
+                    />
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleAddObjective}>
@@ -243,7 +334,12 @@ export default function Home() {
                       variant="outline"
                       onClick={() => {
                         setIsAddingNew(false);
-                        setNewObjective({ id: "", name: "", description: "", priority: 1 });
+                        setNewObjective({
+                          id: "",
+                          name: "",
+                          description: "",
+                          priority: 1,
+                        });
                       }}
                     >
                       Cancel
@@ -258,7 +354,11 @@ export default function Home() {
                 <div>
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-medium">Objectives</h4>
-                    <Button size="sm" variant="outline" onClick={() => setIsAddingNew(true)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsAddingNew(true)}
+                    >
                       + Add Objective
                     </Button>
                   </div>
@@ -270,21 +370,55 @@ export default function Home() {
                           <div className="space-y-2">
                             <div>
                               <Label className="text-xs">Name</Label>
-                              <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="mt-1" />
+                              <Input
+                                value={editForm.name}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    name: e.target.value,
+                                  })
+                                }
+                                className="mt-1"
+                              />
                             </div>
                             <div>
                               <Label className="text-xs">Description</Label>
-                              <Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="mt-1" />
+                              <Textarea
+                                value={editForm.description}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    description: e.target.value,
+                                  })
+                                }
+                                className="mt-1"
+                              />
                             </div>
                             <div>
                               <Label className="text-xs">Priority (1-5)</Label>
-                              <Input type="number" min="1" max="5" value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: clampPriority(e.target.value) })} className="mt-1" />
+                              <Input
+                                type="number"
+                                min="1"
+                                max="5"
+                                value={editForm.priority}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    priority: clampPriority(e.target.value),
+                                  })
+                                }
+                                className="mt-1"
+                              />
                             </div>
                             <div className="flex gap-2">
                               <Button size="sm" onClick={handleSaveEdit}>
                                 Save
                               </Button>
-                              <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                              >
                                 Cancel
                               </Button>
                             </div>
@@ -293,15 +427,30 @@ export default function Home() {
                           <div>
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <div className="font-medium text-sm">{obj.name}</div>
-                                <div className="text-sm text-muted-foreground mt-1">{obj.description}</div>
-                                <div className="text-xs text-muted-foreground mt-1">Priority: {obj.priority}</div>
+                                <div className="font-medium text-sm">
+                                  {obj.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  {obj.description}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Priority: {obj.priority}
+                                </div>
                               </div>
                               <div className="flex gap-1 ml-2">
-                                <Button size="sm" variant="ghost" onClick={() => handleStartEdit(i)}>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleStartEdit(i)}
+                                >
                                   Edit
                                 </Button>
-                                <Button size="sm" variant="ghost" onClick={() => handleDeleteObjective(i)} className="text-destructive hover:text-destructive">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteObjective(i)}
+                                  className="text-destructive hover:text-destructive"
+                                >
                                   Delete
                                 </Button>
                               </div>
@@ -315,15 +464,47 @@ export default function Home() {
                       <div className="rounded-md border border-primary p-3 space-y-2">
                         <div>
                           <Label className="text-xs">Name</Label>
-                          <Input value={newObjective.name} onChange={(e) => setNewObjective({ ...newObjective, name: e.target.value })} placeholder="Objective name" className="mt-1" />
+                          <Input
+                            value={newObjective.name}
+                            onChange={(e) =>
+                              setNewObjective({
+                                ...newObjective,
+                                name: e.target.value,
+                              })
+                            }
+                            placeholder="Objective name"
+                            className="mt-1"
+                          />
                         </div>
                         <div>
                           <Label className="text-xs">Description</Label>
-                          <Textarea value={newObjective.description} onChange={(e) => setNewObjective({ ...newObjective, description: e.target.value })} placeholder="Objective description" className="mt-1" />
+                          <Textarea
+                            value={newObjective.description}
+                            onChange={(e) =>
+                              setNewObjective({
+                                ...newObjective,
+                                description: e.target.value,
+                              })
+                            }
+                            placeholder="Objective description"
+                            className="mt-1"
+                          />
                         </div>
                         <div>
                           <Label className="text-xs">Priority (1-5)</Label>
-                          <Input type="number" min="1" max="5" value={newObjective.priority} onChange={(e) => setNewObjective({ ...newObjective, priority: clampPriority(e.target.value) })} className="mt-1" />
+                          <Input
+                            type="number"
+                            min="1"
+                            max="5"
+                            value={newObjective.priority}
+                            onChange={(e) =>
+                              setNewObjective({
+                                ...newObjective,
+                                priority: clampPriority(e.target.value),
+                              })
+                            }
+                            className="mt-1"
+                          />
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" onClick={handleAddObjective}>
@@ -334,7 +515,12 @@ export default function Home() {
                             variant="outline"
                             onClick={() => {
                               setIsAddingNew(false);
-                              setNewObjective({ id: "", name: "", description: "", priority: 1 });
+                              setNewObjective({
+                                id: "",
+                                name: "",
+                                description: "",
+                                priority: 1,
+                              });
                             }}
                           >
                             Cancel
@@ -364,7 +550,9 @@ export default function Home() {
                   objectives,
                   parsedObjectives,
                 });
-                router.push(`/call?title=${encodeURIComponent(name || "Call")}`);
+                router.push(
+                  `/call?title=${encodeURIComponent(name || "Call")}`,
+                );
               }}
             >
               Start call
