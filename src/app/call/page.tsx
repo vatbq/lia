@@ -399,8 +399,9 @@ export default function CallPage({
       return;
     }
 
-    if (objectives.length === 0) {
-      console.log('No objectives available to analyze');
+    const incompleteObjectives = objectives.filter(obj => !obj.completed);
+    if (incompleteObjectives.length === 0) {
+      console.log('No incomplete objectives available to analyze');
       return;
     }
 
@@ -419,11 +420,13 @@ export default function CallPage({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          tasks: objectives.map(obj => ({
-            id: obj.id,
-            title: obj.title,
-            description: obj.description
-          })),
+          tasks: objectives
+            .filter(obj => !obj.completed)
+            .map(obj => ({
+              id: obj.id,
+              title: obj.title,
+              description: obj.description
+            })),
           transcription: textToAnalyze
         }),
       });
@@ -632,14 +635,14 @@ export default function CallPage({
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => analyzeTasks()}
-                  disabled={taskAnalysisLoading || !transcription.trim() || objectives.length === 0}
+                  disabled={taskAnalysisLoading || !transcription.trim() || objectives.filter(obj => !obj.completed).length === 0}
                   className="gap-2"
                 >
                   <Brain className="w-4 h-4" />
                   {taskAnalysisLoading ? 'Analyzing...' : 'Analyze Tasks'}
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  Uses current objectives ({objectives.length} tasks)
+                  Uses incomplete objectives ({objectives.filter(obj => !obj.completed).length} tasks)
                 </span>
               </div>
             </div>
