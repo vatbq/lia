@@ -4,6 +4,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
+import { ChevronLeft, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -231,13 +232,23 @@ export default function Home() {
     <div className="min-h-screen w-full py-10 px-32">
       <div>
         <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Prepare your call</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {step === 1
-                ? "Share context and objectives. We'll clarify them before starting the call."
-                : "Review and edit your objectives before starting the call."}
-            </p>
+          <div className="flex items-center gap-2">
+            {step === 2 && (
+              <button
+                onClick={() => setStep(1)}
+                className="flex items-center justify-center hover:bg-muted rounded-md p-1 transition-colors"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            <div>
+              <h1 className="text-2xl font-semibold">Prepare your call</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                {step === 1
+                  ? "Share context and objectives. We'll clarify them before starting the call."
+                  : "Review and edit your objectives before starting the call."}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center justify-center gap-2">
@@ -295,7 +306,9 @@ export default function Home() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="context">Context</Label>
+                    <Label htmlFor="context">
+                      Any previous conversations for context?
+                    </Label>
                     <Textarea
                       id="context"
                       placeholder="Background, who is involved, current state..."
@@ -305,7 +318,9 @@ export default function Home() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="objectives">Objectives</Label>
+                    <Label htmlFor="objectives">
+                      What's the goal of the call?
+                    </Label>
                     <Textarea
                       id="objectives"
                       placeholder="What you want to achieve in this call..."
@@ -315,7 +330,7 @@ export default function Home() {
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-end gap-3">
                   <Button type="submit" disabled={loading}>
                     {loading ? "Clarifying..." : "Next: Review objectives"}
                   </Button>
@@ -411,19 +426,19 @@ export default function Home() {
                               </div>
                               <div className="flex gap-1 ml-2">
                                 <Button
-                                  size="sm"
+                                  size="icon"
                                   variant="ghost"
                                   onClick={() => handleStartEdit(i)}
                                 >
-                                  Edit
+                                  <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  size="sm"
+                                  size="icon"
                                   variant="ghost"
                                   onClick={() => handleDeleteObjective(i)}
                                   className="text-destructive hover:text-destructive"
                                 >
-                                  Delete
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
@@ -541,13 +556,27 @@ export default function Home() {
                       </div>
                     )}
 
-                    <div className="flex justify-center">
+                    <div className="flex items-center mt-4 justify-end gap-4">
                       <Button
-                        size="sm"
                         variant="outline"
                         onClick={() => setIsAddingNew(true)}
                       >
                         + Add Objective
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          saveCall({
+                            name: name || "Call",
+                            context,
+                            objectives,
+                            parsedObjectives,
+                          });
+                          router.push(
+                            `/call?title=${encodeURIComponent(name || "Call")}`,
+                          );
+                        }}
+                      >
+                        Start call
                       </Button>
                     </div>
                   </div>
@@ -559,27 +588,6 @@ export default function Home() {
                   {error}
                 </div>
               )}
-
-              <div className="flex gap-2 mt-6">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  Back
-                </Button>
-                <Button
-                  onClick={() => {
-                    saveCall({
-                      name: name || "Call",
-                      context,
-                      objectives,
-                      parsedObjectives,
-                    });
-                    router.push(
-                      `/call?title=${encodeURIComponent(name || "Call")}`,
-                    );
-                  }}
-                >
-                  Start call
-                </Button>
-              </div>
             </>
           )}
         </div>
