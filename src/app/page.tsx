@@ -32,6 +32,7 @@ const FormSchema = z.object({
 
 export default function Home() {
   const router = useRouter();
+  const [step, setStep] = useState<1 | 2>(1);
   const [context, setContext] = useState(
     "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.",
   );
@@ -125,6 +126,7 @@ export default function Home() {
     if (isDefaultContext && isDefaultObjectives) {
       // Use mock data for default values
       setParsedObjectives(mockObjectives);
+      setStep(2);
       return;
     }
 
@@ -145,6 +147,7 @@ export default function Home() {
         }),
       );
       setParsedObjectives(objectivesWithIds);
+      setStep(2);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -205,287 +208,278 @@ export default function Home() {
           <div className="mb-6">
             <h1 className="text-2xl font-semibold">Prepare your call</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Share context and objectives. We'll clarify them before starting
-              the call.
+              {step === 1
+                ? "Share context and objectives. We'll clarify them before starting the call."
+                : "Review and edit your objectives before starting the call."}
             </p>
           </div>
-          <div>
-            <form className="space-y-4" onSubmit={onSubmit}>
-              <div className="grid gap-2">
-                <Label htmlFor="name">Call title (optional)</Label>
-                <Input
-                  id="name"
-                  placeholder="Quarterly strategy sync"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="context">Context</Label>
-                <Textarea
-                  id="context"
-                  placeholder="Background, who is involved, current state..."
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="objectives">Objectives</Label>
-                <Textarea
-                  id="objectives"
-                  placeholder="What you want to achieve in this call..."
-                  value={objectives}
-                  onChange={(e) => setObjectives(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center gap-3">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Clarifying..." : "Clarify objectives"}
-                </Button>
-              </div>
-            </form>
 
-            {error && (
-              <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-                {error}
+          {/* Progress Indicator */}
+          <div className="mb-8 flex items-center justify-center gap-2">
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                  step === 1
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                1
               </div>
-            )}
-
-            {isAddingNew && parsedObjectives.length === 0 && (
-              <div className="mt-6">
-                <h4 className="text-sm font-medium mb-3">Add Objective</h4>
-                <div className="rounded-md border border-primary p-3 space-y-2">
-                  <div>
-                    <Label className="text-xs">Name</Label>
-                    <Input value={newObjective.title} onChange={(e) => setNewObjective({ ...newObjective, title: e.target.value })} placeholder="Objective title" className="mt-1" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Description</Label>
-                    <Textarea
-                      value={newObjective.description}
-                      onChange={(e) =>
-                        setNewObjective({
-                          ...newObjective,
-                          description: e.target.value,
-                        })
-                      }
-                      placeholder="Objective description"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Priority (1-5)</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="5"
-                      value={newObjective.priority}
-                      onChange={(e) =>
-                        setNewObjective({
-                          ...newObjective,
-                          priority: clampPriority(e.target.value),
-                        })
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleAddObjective}>
-                      Add
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setIsAddingNew(false);
-                        setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
+              <span className={`text-sm ${step === 1 ? "font-medium" : "text-muted-foreground"}`}>
+                Input
+              </span>
+            </div>
+            <div className="h-px w-12 bg-border" />
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                  step === 2
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                2
               </div>
-            )}
-
-            {parsedObjectives.length > 0 && (
-              <div className="mt-6 grid gap-4">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">Objectives</h4>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIsAddingNew(true)}
-                    >
-                      + Add Objective
-                    </Button>
-                  </div>
-
-                  <div className="mt-3 space-y-3">
-                    {parsedObjectives.map((obj, i) => (
-                      <div key={i} className="rounded-md border p-3">
-                        {editingId === i ? (
-                          <div className="space-y-2">
-                            <div>
-                              <Label className="text-xs">Name</Label>
-                              <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="mt-1" />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Description</Label>
-                              <Textarea
-                                value={editForm.description}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    description: e.target.value,
-                                  })
-                                }
-                                className="mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs">Priority (1-5)</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                max="5"
-                                value={editForm.priority}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    priority: clampPriority(e.target.value),
-                                  })
-                                }
-                                className="mt-1"
-                              />
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" onClick={handleSaveEdit}>
-                                Save
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCancelEdit}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">{obj.title}</div>
-                                <div className="text-sm text-muted-foreground mt-1">{obj.description}</div>
-                                <div className="text-xs text-muted-foreground mt-1">Priority: {obj.priority}</div>
-                              </div>
-                              <div className="flex gap-1 ml-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleStartEdit(i)}
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleDeleteObjective(i)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  Delete
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {isAddingNew && (
-                      <div className="rounded-md border border-primary p-3 space-y-2">
-                        <div>
-                          <Label className="text-xs">Name</Label>
-                          <Input value={newObjective.title} onChange={(e) => setNewObjective({ ...newObjective, title: e.target.value })} placeholder="Objective title" className="mt-1" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Description</Label>
-                          <Textarea
-                            value={newObjective.description}
-                            onChange={(e) =>
-                              setNewObjective({
-                                ...newObjective,
-                                description: e.target.value,
-                              })
-                            }
-                            placeholder="Objective description"
-                            className="mt-1"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Priority (1-5)</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="5"
-                            value={newObjective.priority}
-                            onChange={(e) =>
-                              setNewObjective({
-                                ...newObjective,
-                                priority: clampPriority(e.target.value),
-                              })
-                            }
-                            className="mt-1"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={handleAddObjective}>
-                            Add
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setIsAddingNew(false);
-                              setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+              <span className={`text-sm ${step === 2 ? "font-medium" : "text-muted-foreground"}`}>
+                Review
+              </span>
+            </div>
           </div>
-          <div className="flex gap-2 mt-6">
-            {parsedObjectives.length === 0 && (
-              <Button variant="outline" onClick={() => setIsAddingNew(true)}>
-                Manually add objectives
-              </Button>
+
+          <div>
+            {/* Step 1: Input Form */}
+            {step === 1 && (
+              <>
+                <form className="space-y-4" onSubmit={onSubmit}>
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Call title (optional)</Label>
+                    <Input
+                      id="name"
+                      placeholder="Quarterly strategy sync"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="context">Context</Label>
+                    <Textarea
+                      id="context"
+                      placeholder="Background, who is involved, current state..."
+                      value={context}
+                      onChange={(e) => setContext(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="objectives">Objectives</Label>
+                    <Textarea
+                      id="objectives"
+                      placeholder="What you want to achieve in this call..."
+                      value={objectives}
+                      onChange={(e) => setObjectives(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button type="submit" disabled={loading}>
+                      {loading ? "Clarifying..." : "Next: Review objectives"}
+                    </Button>
+                  </div>
+                </form>
+
+                {error && (
+                  <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                    {error}
+                  </div>
+                )}
+              </>
             )}
-            <Button
-              variant="secondary"
-              disabled={parsedObjectives.length === 0}
-              onClick={() => {
-                // Save call data before starting
-                saveCall({
-                  name: name || "Call",
-                  context,
-                  objectives,
-                  parsedObjectives,
-                });
-                router.push(
-                  `/call?title=${encodeURIComponent(name || "Call")}`,
-                );
-              }}
-            >
-              Start call
-            </Button>
+
+            {/* Step 2: Review Objectives */}
+            {step === 2 && (
+              <>
+                <div className="grid gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium">Objectives</h4>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsAddingNew(true)}
+                      >
+                        + Add Objective
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {parsedObjectives.map((obj, i) => (
+                        <div key={i} className="rounded-md border p-3">
+                          {editingId === i ? (
+                            <div className="space-y-2">
+                              <div>
+                                <Label className="text-xs">Name</Label>
+                                <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="mt-1" />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Description</Label>
+                                <Textarea
+                                  value={editForm.description}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      description: e.target.value,
+                                    })
+                                  }
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Priority (1-5)</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="5"
+                                  value={editForm.priority}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      priority: clampPriority(e.target.value),
+                                    })
+                                  }
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={handleSaveEdit}>
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleCancelEdit}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-sm">{obj.title}</div>
+                                  <div className="text-sm text-muted-foreground mt-1">{obj.description}</div>
+                                  <div className="text-xs text-muted-foreground mt-1">Priority: {obj.priority}</div>
+                                </div>
+                                <div className="flex gap-1 ml-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleStartEdit(i)}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteObjective(i)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {isAddingNew && (
+                        <div className="rounded-md border border-primary p-3 space-y-2">
+                          <div>
+                            <Label className="text-xs">Name</Label>
+                            <Input value={newObjective.title} onChange={(e) => setNewObjective({ ...newObjective, title: e.target.value })} placeholder="Objective title" className="mt-1" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Description</Label>
+                            <Textarea
+                              value={newObjective.description}
+                              onChange={(e) =>
+                                setNewObjective({
+                                  ...newObjective,
+                                  description: e.target.value,
+                                })
+                              }
+                              placeholder="Objective description"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Priority (1-5)</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="5"
+                              value={newObjective.priority}
+                              onChange={(e) =>
+                                setNewObjective({
+                                  ...newObjective,
+                                  priority: clampPriority(e.target.value),
+                                })
+                              }
+                              className="mt-1"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={handleAddObjective}>
+                              Add
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setIsAddingNew(false);
+                                setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      saveCall({
+                        name: name || "Call",
+                        context,
+                        objectives,
+                        parsedObjectives,
+                      });
+                      router.push(
+                        `/call?title=${encodeURIComponent(name || "Call")}`,
+                      );
+                    }}
+                  >
+                    Start call
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
