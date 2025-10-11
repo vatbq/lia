@@ -71,14 +71,6 @@ export default function RootLayout({
                       <Link href="/dashboard">Dashboard</Link>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <NavigationMenuLink
-                      className={navigationMenuTriggerStyle()}
-                      asChild
-                    >
-                      <Link href="/mock">Mock Testing</Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
             </div>
