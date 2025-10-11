@@ -22,7 +22,7 @@ const responseSchema = z.object({
     z.string(),
     z.object({
       completed: z.boolean(),
-      message: z.string(),
+      message: z.string().optional(),
     })
   ),
 });
@@ -61,8 +61,7 @@ ${tasksText}
 
 Para cada tarea, determina:
 1. Si está completada (completed: true) o pendiente (completed: false) basándote en la conversación
-2. Un mensaje explicativo:
-   - Si está pendiente: explica qué se necesita hacer para completarla
+2. Un mensaje explicativo (que solo sera si la tarea esta completada)
    - Si está completada: explica por qué se considera completada
 
 Debes responder con un JSON con la estructura:
@@ -70,7 +69,7 @@ Debes responder con un JSON con la estructura:
   "tasks": {
     "task-id": {
       "completed": boolean,
-      "message": "string explicativo"
+      "message": "string explicativo en caso de estar completada"
     }
   }
 }
