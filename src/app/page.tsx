@@ -21,18 +21,24 @@ type Objective = {
 
 const FormSchema = z.object({
   name: z.string().min(1),
-  context: z.string().min(10, "Please add more context (min 10 chars)").max(2000),
-  objectives: z.string().min(10, "Please detail the objectives (min 10 chars)").max(2000),
+  context: z
+    .string()
+    .min(10, "Please add more context (min 10 chars)")
+    .max(2000),
+  objectives: z
+    .string()
+    .min(10, "Please detail the objectives (min 10 chars)")
+    .max(2000),
 });
 
 export default function Home() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [context, setContext] = useState(
-    "Demo call for LIA - an AI-powered meeting assistant that provides real-time insights, action items, and objective tracking. Participants: Sales Rep, Technical Lead, and Potential Client. Current state: Client is interested in AI meeting tools and wants to understand LIA's capabilities."
+    "Demo call for LIA - an AI-powered meeting assistant that provides real-time insights, action items, and objective tracking. Participants: Sales Rep, Technical Lead, and Potential Client. Current state: Client is interested in AI meeting tools and wants to understand LIA's capabilities.",
   );
   const [objectives, setObjectives] = useState(
-    "1. Demonstrate LIA's real-time transcription and analysis 2. Show live insights and action item generation 3. Explain integration with Slack and Teams 4. Discuss security and compliance features 5. Address pricing and next steps"
+    "1. Demonstrate LIA's real-time transcription and analysis 2. Show live insights and action item generation 3. Explain integration with Slack and Teams 4. Discuss security and compliance features 5. Address pricing and next steps",
   );
   const [name, setName] = useState("LIA Product Demo");
   const [loading, setLoading] = useState(false);
@@ -71,21 +77,24 @@ export default function Home() {
     {
       id: uuidv4(),
       title: "Show Real-time Transcription",
-      description: "Demonstrate LIA's live transcription capabilities with accurate speech-to-text",
+      description:
+        "Demonstrate LIA's live transcription capabilities with accurate speech-to-text",
       completed: false,
       priority: 1,
     },
     {
       id: uuidv4(),
       title: "Demonstrate Live Insights",
-      description: "Show how LIA generates real-time insights and sentiment analysis during meetings",
+      description:
+        "Show how LIA generates real-time insights and sentiment analysis during meetings",
       completed: false,
       priority: 1,
     },
     {
       id: uuidv4(),
       title: "Show Action Item Generation",
-      description: "Demonstrate automatic action item creation when commitments are made",
+      description:
+        "Demonstrate automatic action item creation when commitments are made",
       completed: false,
       priority: 2,
     },
@@ -126,10 +135,12 @@ export default function Home() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || "Request failed");
       // Add UUIDs to objectives from API
-      const objectivesWithIds = (data.data.objectives || []).map((obj: Omit<Objective, "id">) => ({
-        id: uuidv4(),
-        ...obj,
-      }));
+      const objectivesWithIds = (data.data.objectives || []).map(
+        (obj: Omit<Objective, "id">) => ({
+          id: uuidv4(),
+          ...obj,
+        }),
+      );
       setParsedObjectives(objectivesWithIds);
       setStep(2);
     } catch (err: unknown) {
@@ -203,13 +214,20 @@ export default function Home() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {step === 2 && (
-              <button onClick={() => setStep(1)} className="flex items-center justify-center hover:bg-muted rounded-md p-1 transition-all hover:scale-110 active:scale-95">
+              <button
+                onClick={() => setStep(1)}
+                className="flex items-center justify-center hover:bg-muted rounded-md p-1 transition-all hover:scale-110 active:scale-95"
+              >
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
             <div>
               <h1 className="text-2xl font-semibold">Prepare your call</h1>
-              <p className="text-sm text-muted-foreground mt-1">{step === 1 ? "Share context and objectives. We'll clarify them before starting the call." : "Review and edit your objectives before starting the call."}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {step === 1
+                  ? "Share context and objectives. We'll clarify them before starting the call."
+                  : "Review and edit your objectives before starting the call."}
+              </p>
             </div>
           </div>
 
@@ -220,7 +238,11 @@ export default function Home() {
               >
                 1
               </div>
-              <span className={`text-sm transition-all duration-300 ${step === 1 ? "font-medium" : "text-muted-foreground"}`}>Input</span>
+              <span
+                className={`text-sm transition-all duration-300 ${step === 1 ? "font-medium" : "text-muted-foreground"}`}
+              >
+                Input
+              </span>
             </div>
             <div className="h-px w-12 bg-border transition-colors duration-300" />
             <div className="flex items-center gap-2">
@@ -229,7 +251,11 @@ export default function Home() {
               >
                 2
               </div>
-              <span className={`text-sm transition-all duration-300 ${step === 2 ? "font-medium" : "text-muted-foreground"}`}>Review</span>
+              <span
+                className={`text-sm transition-all duration-300 ${step === 2 ? "font-medium" : "text-muted-foreground"}`}
+              >
+                Review
+              </span>
             </div>
           </div>
         </div>
@@ -243,16 +269,37 @@ export default function Home() {
               <form className="space-y-4" onSubmit={onSubmit}>
                 <div className="grid gap-2">
                   <Label htmlFor="name">Call title (optional)</Label>
-                  <Input id="name" placeholder="LIA product demo" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input
+                    id="name"
+                    placeholder="LIA product demo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="context">Any previous conversations for context?</Label>
-                    <Textarea id="context" placeholder="Background, who is involved, current state..." value={context} onChange={(e) => setContext(e.target.value)} rows={12} />
+                    <Label htmlFor="context">
+                      Any previous conversations for context?
+                    </Label>
+                    <Textarea
+                      id="context"
+                      placeholder="Background, who is involved, current state..."
+                      value={context}
+                      onChange={(e) => setContext(e.target.value)}
+                      rows={12}
+                    />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="objectives">What's the goal of the call?</Label>
-                    <Textarea id="objectives" placeholder="What you want to achieve in this call..." value={objectives} onChange={(e) => setObjectives(e.target.value)} rows={12} />
+                    <Label htmlFor="objectives">
+                      What's the goal of the call?
+                    </Label>
+                    <Textarea
+                      id="objectives"
+                      placeholder="What you want to achieve in this call..."
+                      value={objectives}
+                      onChange={(e) => setObjectives(e.target.value)}
+                      rows={12}
+                    />
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-3">
@@ -262,7 +309,11 @@ export default function Home() {
                 </div>
               </form>
 
-              {error && <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">{error}</div>}
+              {error && (
+                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                  {error}
+                </div>
+              )}
             </div>
           )}
 
@@ -273,21 +324,79 @@ export default function Home() {
                 <div>
                   <div className="space-y-3">
                     {parsedObjectives.map((obj, i) => (
-                      <div key={obj.id} className="rounded-md border p-3 transition-all duration-200 hover:shadow-md hover:border-primary/50">
+                      <div
+                        key={obj.id}
+                        className="rounded-md border p-3 transition-all duration-200 hover:shadow-md hover:border-primary/50"
+                      >
                         {editingId === i ? (
                           <div className="space-y-2">
-                            <div>
-                              <Label className="text-xs">Name</Label>
-                              <Input
-                                value={editForm.title}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    title: e.target.value,
-                                  })
-                                }
-                                className="mt-1"
-                              />
+                            <div className="flex gap-2">
+                              <div className="flex-1">
+                                <Label className="text-xs">Name</Label>
+                                <Input
+                                  value={editForm.title}
+                                  onChange={(e) =>
+                                    setEditForm({
+                                      ...editForm,
+                                      title: e.target.value,
+                                    })
+                                  }
+                                  className="mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Priority</Label>
+                                <div className="flex gap-0 mt-1 bg-muted rounded-md p-1">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditForm({
+                                        ...editForm,
+                                        priority: 1,
+                                      })
+                                    }
+                                    className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
+                                      editForm.priority === 1
+                                        ? "text-green-600"
+                                        : "text-muted-foreground hover:text-green-500"
+                                    }`}
+                                  >
+                                    Low
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditForm({
+                                        ...editForm,
+                                        priority: 2,
+                                      })
+                                    }
+                                    className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
+                                      editForm.priority === 2
+                                        ? "text-yellow-600"
+                                        : "text-muted-foreground hover:text-yellow-500"
+                                    }`}
+                                  >
+                                    Medium
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setEditForm({
+                                        ...editForm,
+                                        priority: 3,
+                                      })
+                                    }
+                                    className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
+                                      editForm.priority === 3
+                                        ? "text-red-600"
+                                        : "text-muted-foreground hover:text-red-500"
+                                    }`}
+                                  >
+                                    High
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                             <div>
                               <Label className="text-xs">Description</Label>
@@ -302,27 +411,15 @@ export default function Home() {
                                 className="mt-1"
                               />
                             </div>
-                            <div>
-                              <Label className="text-xs">Priority (1-5)</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                max="5"
-                                value={editForm.priority}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    priority: clampPriority(e.target.value),
-                                  })
-                                }
-                                className="mt-1"
-                              />
-                            </div>
                             <div className="flex gap-2">
                               <Button size="sm" onClick={handleSaveEdit}>
                                 Save
                               </Button>
-                              <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                              >
                                 Cancel
                               </Button>
                             </div>
@@ -331,15 +428,45 @@ export default function Home() {
                           <div>
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <div className="font-medium text-sm">{obj.title}</div>
-                                <div className="text-sm text-muted-foreground mt-1">{obj.description}</div>
-                                <div className="text-xs text-muted-foreground mt-1">Priority: {obj.priority}</div>
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium text-sm">
+                                    {obj.title}
+                                  </div>
+                                  <span
+                                    className={`text-xs font-medium ${
+                                      obj.priority === 1
+                                        ? "text-green-600"
+                                        : obj.priority === 2
+                                          ? "text-yellow-600"
+                                          : "text-red-600"
+                                    }`}
+                                  >
+                                    {obj.priority === 1
+                                      ? "Low"
+                                      : obj.priority === 2
+                                        ? "Medium"
+                                        : "High"}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  {obj.description}
+                                </div>
                               </div>
                               <div className="flex gap-1 ml-2">
-                                <Button size="icon" variant="ghost" onClick={() => handleStartEdit(i)} className="transition-all hover:scale-110 active:scale-95">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleStartEdit(i)}
+                                  className="transition-all hover:scale-110 active:scale-95"
+                                >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button size="icon" variant="ghost" onClick={() => handleDeleteObjective(i)} className="text-destructive hover:text-destructive transition-all hover:scale-110 active:scale-95">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteObjective(i)}
+                                  className="text-destructive hover:text-destructive transition-all hover:scale-110 active:scale-95"
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -447,7 +574,10 @@ export default function Home() {
                     )}
 
                     <div className="flex items-center mt-4 justify-end gap-4">
-                      <Button variant="outline" onClick={() => setIsAddingNew(true)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddingNew(true)}
+                      >
                         + Add Objective
                       </Button>
                       <Button
@@ -458,7 +588,9 @@ export default function Home() {
                             objectives,
                             parsedObjectives,
                           });
-                          router.push(`/call?title=${encodeURIComponent(name || "Call")}`);
+                          router.push(
+                            `/call?title=${encodeURIComponent(name || "Call")}`,
+                          );
                         }}
                       >
                         Start call
@@ -468,7 +600,11 @@ export default function Home() {
                 </div>
               </div>
 
-              {error && <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">{error}</div>}
+              {error && (
+                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                  {error}
+                </div>
+              )}
             </div>
           )}
         </div>
