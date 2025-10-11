@@ -62,7 +62,7 @@ export default function DashboardPage() {
       <div className="min-h-screen w-full flex items-center justify-center">
         <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-1000">
           <h1 className="text-6xl font-bold tracking-tight text-center animate-in fade-in-50 slide-in-from-bottom-3 duration-700">
-            Lia
+            LIA
           </h1>
           <p className="text-2xl text-muted-foreground text-center animate-in fade-in-50 slide-in-from-bottom-4 duration-1000 delay-200">
             Your next sale, one click away
