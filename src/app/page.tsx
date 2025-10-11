@@ -1,103 +1,169 @@
-import Image from "next/image";
+"use client";
+import * as React from "react";
+import { useState } from "react";
+import { z } from "zod";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+
+const FormSchema = z.object({
+  name: z.string().min(1).optional(),
+  context: z
+    .string()
+    .min(10, "Please add more context (min 10 chars)")
+    .max(2000),
+  objectives: z
+    .string()
+    .min(10, "Please detail the objectives (min 10 chars)")
+    .max(2000),
+});
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const router = useRouter();
+  const [context, setContext] = useState("Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.");
+  const [objectives, setObjectives] = useState("1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics");
+  const [name, setName] = useState("Q4 Strategy Planning");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setResult(null);
+
+    const parse = FormSchema.safeParse({ name, context, objectives });
+    if (!parse.success) {
+      setError(parse.error.issues.map((i) => i.message).join("\n"));
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/parse-objectives", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ context, objectives }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Request failed");
+      setResult(data.data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen w-full px-6 py-10 sm:px-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold tracking-tight">LIA</h1>
+          <p className="mt-2 text-lg text-muted-foreground">
+            Listen, Insight, Act
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pre setup call
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <Card>
+          <CardHeader>
+            <CardTitle>Prepare your call</CardTitle>
+            <CardDescription>
+              Share context and objectives. We'll clarify them before starting the call.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={onSubmit}>
+              <div className="grid gap-2">
+                <Label htmlFor="name">Call title (optional)</Label>
+                <Input
+                  id="name"
+                  placeholder="Quarterly strategy sync"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="context">Context</Label>
+                <Textarea
+                  id="context"
+                  placeholder="Background, who is involved, current state..."
+                  value={context}
+                  onChange={(e) => setContext(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="objectives">Objectives</Label>
+                <Textarea
+                  id="objectives"
+                  placeholder="What you want to achieve in this call..."
+                  value={objectives}
+                  onChange={(e) => setObjectives(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Clarifying..." : "Clarify objectives"}
+                </Button>
+              </div>
+            </form>
+
+            {error && (
+              <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                {error}
+              </div>
+            )}
+
+            {result && (
+              <div className="mt-6 grid gap-4">
+                <div>
+                  <h4 className="text-sm font-medium">Objectives</h4>
+                  <ul className="mt-2 list-disc pl-5 text-sm">
+                    {(result.objectives || []).map((o: any, i: number) => (
+                      <li key={i}>
+                        <strong>{o.name}</strong>: {o.description} (Priority: {o.priority})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {(result.constraints?.length || 0) > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium">Constraints</h4>
+                    <ul className="mt-2 list-disc pl-5 text-sm">
+                      {result.constraints.map((c: string, i: number) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(result.risks?.length || 0) > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium">Risks</h4>
+                    <ul className="mt-2 list-disc pl-5 text-sm">
+                      {result.risks.map((r: string, i: number) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button
+              variant="secondary"
+              disabled={!result}
+              onClick={() => router.push(`/call?title=${encodeURIComponent(name || "Call")}`)}
+            >
+              Start call
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
