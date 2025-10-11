@@ -34,6 +34,15 @@ const responseSchema = z.object({
       timestamp: z.string().default(new Date().toISOString()),
     })
   ),
+  insights: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string(),
+      type: z.enum(['positive', 'negative', 'neutral', 'warning']),
+      timestamp: z.string().default(new Date().toISOString()),
+    })
+  ),
 });
 
 export async function POST(request: NextRequest) {
@@ -90,7 +99,24 @@ actionItems: [
     "completed": false,
     "timestamp": "2024-10-05T14:48:00.000Z"
   }
-    ]
+]
+
+Also, generate insights about the conversation. Look for:
+- Positive developments or achievements
+- Concerns or negative aspects
+- Important decisions made
+- Warnings or risks mentioned
+- Neutral observations about progress
+
+insights: [
+  {
+    "id": "unique-insight-id",
+    "title": "Key insight title",
+    "description": "Detailed description of the insight",
+    "type": "positive|negative|neutral|warning",
+    "timestamp": "2024-10-05T14:48:00.000Z"
+  }
+]
 `;
 
     const { object } = await generateObject({

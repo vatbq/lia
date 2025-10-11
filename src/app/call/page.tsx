@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect, useRef } from "react";
 import { CheckCircle2, Circle, Lightbulb, AlertTriangle, CheckCircle, Clock, Info, PhoneOff, Brain } from "lucide-react";
-import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import { getLatestCall, updateCall } from "@/lib/storage";
 import { useRouter } from "next/navigation";
@@ -64,7 +63,6 @@ export default function CallPage({
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [currentCall, setCurrentCall] = useState<any>(null);
   const [isEndingCall, setIsEndingCall] = useState(false);
   const [completedObjectiveIds, setCompletedObjectiveIds] = useState<Set<string>>(new Set());
@@ -144,126 +142,6 @@ export default function CallPage({
     transcriptionsRef.current = transcriptions;
   }, [transcriptions]);
 
-  useEffect(() => {
-    // Connect to Socket.IO server
-    const newSocket: Socket = io("http://localhost:3000");
-
-    newSocket.on("connect", () => {
-      console.log("Call page Socket.IO connected:", newSocket.id);
-      // Test if we can emit and receive events
-      console.log("Testing socket communication...");
-    });
-
-    newSocket.on("test_event", (data) => {
-      console.log("Test event received on call page:", data);
-    });
-
-    newSocket.on("objective_updated", (data: { id: string; status: 'pending' | 'in_progress' | 'completed'; message: string }) => {
-      console.log("🎯 Objective updated event received:", data);
-
-      setObjectives((prev) => {
-        const foundObjective = prev.find(obj => obj.id === data.id);
-        if (!foundObjective) {
-          console.warn("⚠️ Objective ID not found in current objectives:", data.id);
-          console.log("Available objective IDs:", prev.map(obj => obj.id));
-        } else {
-          console.log("✅ Found objective:", foundObjective.title);
-        }
-
-        return prev.map((obj) =>
-          obj.id === data.id ? {
-            ...obj,
-            completed: data.status === 'completed',
-            status: data.status
-          } : obj
-        );
-      });
-
-      if (data.status === 'completed') {
-        setCompletedObjectiveIds((prev) => new Set(prev).add(data.id));
-      }
-    });
-
-    newSocket.on("new_insight", (data: any) => {
-      console.log("New insight received:", data);
-      // Convert timestamp string back to Date object
-      const insight: Insight = {
-        ...data,
-        timestamp: new Date(data.timestamp)
-      };
-      setInsights((prev) => [insight, ...prev]);
-    });
-
-    newSocket.on("new_action_item", (data: any) => {
-      console.log("New action item received:", data);
-      // Convert timestamp string back to Date object
-      const actionItem: ActionItem = {
-        ...data,
-        timestamp: new Date(data.timestamp)
-      };
-      setActionItems((prev) => [actionItem, ...prev]);
-    });
-
-    newSocket.on("action_item_complete", (data: { id: string }) => {
-      console.log("Action item completed:", data);
-      setActionItems((prev) =>
-        prev.map((item) =>
-          item.id === data.id ? { ...item, completed: true } : item
-        )
-      );
-    });
-
-    newSocket.on("task_analysis_updated", (data: { tasks: Record<string, { completed: boolean; message: string }>; timestamp: string }) => {
-      console.log("🎯 Task analysis updated event received:", data);
-
-      setObjectives((prev) => {
-        return prev.map((obj) => {
-          const taskAnalysis = data.tasks[obj.id];
-          if (taskAnalysis) {
-            // Only update if task is not already completed
-            // Once completed, tasks stay completed
-            if (obj.completed && !taskAnalysis.completed) {
-              return obj; // Keep existing completed state
-            }
-            
-            return {
-              ...obj,
-              completed: taskAnalysis.completed,
-              status: taskAnalysis.completed ? 'completed' : 'pending'
-            };
-          }
-          return obj;
-        });
-      });
-
-      // Update completed objective IDs - only add new completions, never remove
-      setCompletedObjectiveIds((prev) => {
-        const newSet = new Set(prev);
-        Object.entries(data.tasks).forEach(([id, analysis]) => {
-          if (analysis.completed) {
-            newSet.add(id);
-          }
-          // Don't remove from completed set - once completed, stay completed
-        });
-        return newSet;
-      });
-    });
-
-    newSocket.on("disconnect", () => {
-      console.log("Socket.IO disconnected");
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("Socket.IO connection error:", error);
-    });
-
-    // Set socket immediately after setting up listeners
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
 
   // Auto-setup microphone on mount
   useEffect(() => {
@@ -381,14 +259,11 @@ export default function CallPage({
   ]);
 
   const completeActionItem = (id: string) => {
-    if (socket) {
-      socket.emit("complete_action_item", { id });
-      setActionItems((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, completed: true } : item
-        )
-      );
-    }
+    setActionItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, completed: true } : item
+      )
+    );
   };
 
   const analyzeTasks = async (transcriptionText?: string) => {
@@ -441,13 +316,55 @@ export default function CallPage({
       // Update the last analyzed transcription
       setLastAnalysisTranscription(textToAnalyze);
       
-      // Emit socket event to update all clients
-      if (socket) {
-        socket.emit('update_task_analysis', {
-          tasks: result.tasks,
-          timestamp: new Date().toISOString()
+      // Update objectives directly from API response
+      setObjectives((prev) => {
+        return prev.map((obj) => {
+          const taskAnalysis = result.tasks[obj.id];
+          if (taskAnalysis) {
+            // Only update if task is not already completed
+            // Once completed, tasks stay completed
+            if (obj.completed && !taskAnalysis.completed) {
+              return obj; // Keep existing completed state
+            }
+            
+            return {
+              ...obj,
+              completed: taskAnalysis.completed,
+              status: taskAnalysis.completed ? 'completed' : 'pending'
+            };
+          }
+          return obj;
         });
-        console.log('📤 Task analysis results sent via socket');
+      });
+
+      // Update completed objective IDs - only add new completions, never remove
+      setCompletedObjectiveIds((prev) => {
+        const newSet = new Set(prev);
+        Object.entries(result.tasks).forEach(([id, analysis]) => {
+          if ((analysis as { completed: boolean }).completed) {
+            newSet.add(id);
+          }
+          // Don't remove from completed set - once completed, stay completed
+        });
+        return newSet;
+      });
+
+      // Add new insights from API response
+      if (result.insights && result.insights.length > 0) {
+        const newInsights = result.insights.map((insight: any) => ({
+          ...insight,
+          timestamp: new Date(insight.timestamp)
+        }));
+        setInsights((prev) => [...newInsights, ...prev]);
+      }
+
+      // Add new action items from API response
+      if (result.actionItems && result.actionItems.length > 0) {
+        const newActionItems = result.actionItems.map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        }));
+        setActionItems((prev) => [...newActionItems, ...prev]);
       }
       
       // Only show alert for manual analysis (when no transcriptionText parameter)
