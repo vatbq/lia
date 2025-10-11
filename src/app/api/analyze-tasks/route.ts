@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { io } from 'socket.io-client';
-import { getOpenAIClient } from '@/lib/openai';
 import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 // Schema to validate input
 const requestSchema = z.object({
@@ -12,7 +10,6 @@ const requestSchema = z.object({
       id: z.string(),
       title: z.string(),
       description: z.string().optional(),
-      priority: z.number().optional(),
     })
   ),
   transcription: z.string(),
@@ -27,28 +24,34 @@ const responseSchema = z.object({
       message: z.string().optional(),
     })
   ),
+  actionItems: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      priority: z.enum(['low', 'medium', 'high']).optional(),
+      completed: z.boolean(),
+      timestamp: z.string().default(new Date().toISOString()),
+    })
+  ),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validar el input
+    console.log(process.env.OPENAI_API_KEY);
+    // Validate the input
     const { tasks, transcription } = requestSchema.parse(body);
 
     // Prepare the context for the AI
     const conversationText = transcription;
 
     const tasksText = tasks
-    .filter((task: any) => task.completed === false)
       .map(
         (task: any) =>
           `- PENDING ${task.id}: ${task.title}${
             task.description ? ` - ${task.description}` : ''
-          }${
-            task.completed !== undefined
-              ? ` (Currently: 'PENDING')`
-              : ''
           }`
       )
       .join('\n');
@@ -74,6 +77,20 @@ You must respond with a JSON with the following structure:
     }
   }
 }
+
+Additionally, extract any action items mentioned in the conversation only if you can identify them clearly.
+For example if the conversation includes "We need to schedule a follow-up meeting", create an action item like:
+
+actionItems: [
+  {
+    "id": "unique-action-item-id",
+    "title": "Schedule a follow-up meeting",
+    "description": "Follow up on the previous discussion",
+    "priority": "medium",
+    "completed": false,
+    "timestamp": "2024-10-05T14:48:00.000Z"
+  }
+    ]
 `;
 
     const { object } = await generateObject({
@@ -81,9 +98,6 @@ You must respond with a JSON with the following structure:
       schema: responseSchema,
       prompt: prompt,
     });
-
-    // Note: Socket emission will be handled by the client after receiving this response
-    console.log('📤 Task analysis completed, client will handle socket emission');
 
     return NextResponse.json(object);
   } catch (error: any) {
