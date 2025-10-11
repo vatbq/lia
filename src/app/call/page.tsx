@@ -1,12 +1,22 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import { CheckCircle2, Circle, Lightbulb, AlertTriangle, CheckCircle, Clock, Info, PhoneOff } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import { getLatestCall, updateCall } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  ConnectionState,
+  RealtimeEvent,
+  useOpenAIRealtime,
+  TranscriptionData,
+} from "@/contexts/openai-realtime-context";
+import {
+  MicrophoneState,
+  useMicrophone,
+} from "@/contexts/microphone-context";
 
 interface Objective {
   id: string;
@@ -35,6 +45,12 @@ interface ActionItem {
   timestamp: Date;
 }
 
+interface Transcription {
+  id: string;
+  text: string;
+  timestamp: number;
+}
+
 export default function CallPage({
   searchParams,
 }: {
@@ -50,6 +66,30 @@ export default function CallPage({
   const [currentCall, setCurrentCall] = useState<any>(null);
   const [isEndingCall, setIsEndingCall] = useState(false);
   const [completedObjectiveIds, setCompletedObjectiveIds] = useState<Set<string>>(new Set());
+
+  // Audio transcription state
+  const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
+  const hasSetupMicrophoneRef = useRef<boolean>(false);
+  const hasMicrophoneStartedRef = useRef<boolean>(false);
+
+  // Audio hooks
+  const {
+    connection,
+    connectToOpenAI,
+    connectionState,
+    addListener,
+    removeListener,
+    send,
+  } = useOpenAIRealtime();
+  const {
+    setupMicrophone,
+    microphone,
+    startMicrophone,
+    stopMicrophone,
+    microphoneState,
+    addAudioDataListener,
+    removeAudioDataListener,
+  } = useMicrophone();
 
   // Load objectives from localStorage on mount
   useEffect(() => {
@@ -176,6 +216,107 @@ export default function CallPage({
     };
   }, []);
 
+  // Auto-setup microphone on mount
+  useEffect(() => {
+    if (!hasSetupMicrophoneRef.current) {
+      console.log("[CallPage] Setting up microphone on mount");
+      setupMicrophone();
+      hasSetupMicrophoneRef.current = true;
+    }
+  }, [setupMicrophone]);
+
+  // Auto-connect to OpenAI when microphone is ready
+  useEffect(() => {
+    console.log("[CallPage] Microphone state changed:", microphoneState);
+    if (microphoneState === MicrophoneState.Ready) {
+      console.log("[CallPage] Microphone ready, connecting to OpenAI");
+      connectToOpenAI({});
+    }
+  }, [microphoneState, connectToOpenAI]);
+
+  // Handle audio data and transcriptions
+  useEffect(() => {
+    console.log("[CallPage] Audio effect triggered. Microphone:", !!microphone, "Connection:", !!connection, "State:", connectionState);
+    if (!microphone) {
+      console.log("[CallPage] No microphone, returning");
+      return;
+    }
+    if (!connection) {
+      console.log("[CallPage] No connection, returning");
+      return;
+    }
+
+    let audioDataCount = 0;
+    const onAudioData = (pcm16Data: Int16Array) => {
+      audioDataCount++;
+      if (audioDataCount % 50 === 0) {
+        console.log("[CallPage] Sending audio data #", audioDataCount, "Size:", pcm16Data.length);
+      }
+      send(pcm16Data.buffer);
+    };
+
+    const onTranscript = (data: unknown) => {
+      console.log("[CallPage] 🎤 onTranscript callback triggered");
+      console.log("[CallPage] Transcript data:", JSON.stringify(data, null, 2));
+      const transcriptData = data as TranscriptionData;
+      const transcript = transcriptData.transcript;
+
+      if (transcript && transcript !== "") {
+        console.log("[CallPage] Transcript received:", transcript);
+        setTranscriptions((prev) => [
+          ...prev,
+          {
+            id: transcriptData.item_id,
+            text: transcript,
+            timestamp: Date.now(),
+          },
+        ]);
+        console.log("[CallPage] Transcript added to list");
+      } else {
+        console.log("[CallPage] Transcript was empty or undefined");
+      }
+    };
+
+    console.log("[CallPage] Connection state:", connectionState);
+    if (connectionState === ConnectionState.OPEN) {
+      console.log("[CallPage] Connection is OPEN, setting up listeners and starting microphone");
+      addListener(RealtimeEvent.Transcript, onTranscript);
+      addAudioDataListener(onAudioData);
+
+      if (!hasMicrophoneStartedRef.current) {
+        console.log("[CallPage] Starting microphone");
+        startMicrophone();
+        hasMicrophoneStartedRef.current = true;
+      } else {
+        console.log("[CallPage] Microphone already started");
+      }
+    } else {
+      console.log("[CallPage] Connection not open, stopping microphone if needed");
+      if (hasMicrophoneStartedRef.current) {
+        console.log("[CallPage] Stopping microphone");
+        stopMicrophone();
+        hasMicrophoneStartedRef.current = false;
+      }
+    }
+
+    return () => {
+      console.log("[CallPage] Cleaning up audio listeners");
+      removeListener(RealtimeEvent.Transcript, onTranscript);
+      removeAudioDataListener(onAudioData);
+    };
+  }, [
+    connectionState,
+    connection,
+    microphone,
+    addListener,
+    removeListener,
+    send,
+    addAudioDataListener,
+    removeAudioDataListener,
+    startMicrophone,
+    stopMicrophone,
+  ]);
+
   const completeActionItem = (id: string) => {
     if (socket) {
       socket.emit("complete_action_item", { id });
@@ -278,6 +419,24 @@ export default function CallPage({
                 <p className="mt-2 text-lg text-muted-foreground">
                   Live insights and action items from your call
                 </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      connectionState === ConnectionState.OPEN
+                        ? "bg-green-500 animate-pulse"
+                        : connectionState === ConnectionState.CONNECTING
+                        ? "bg-yellow-500 animate-pulse"
+                        : "bg-red-500"
+                    }`}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {connectionState === ConnectionState.OPEN
+                      ? "Transcription active"
+                      : connectionState === ConnectionState.CONNECTING
+                      ? "Connecting..."
+                      : "Disconnected"}
+                  </span>
+                </div>
               </div>
               <Button
                 onClick={endCall}
@@ -289,6 +448,22 @@ export default function CallPage({
               </Button>
             </div>
           </div>
+
+          {/* Transcription Section */}
+          {transcriptions.length > 0 && (
+            <div className="mb-6">
+              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg border p-4">
+                <h3 className="text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">
+                  Live Transcription
+                </h3>
+                <div className="prose prose-sm max-w-none">
+                  <p className="text-slate-900 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap">
+                    {transcriptions.map((t) => t.text).join(" ")}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Insights Section */}
