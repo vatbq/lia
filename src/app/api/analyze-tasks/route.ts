@@ -226,6 +226,7 @@ Return your analysis in the following structure (all arrays, no nested objects):
 - Use professional, clear language in all messages and descriptions
 - If no NEW action items or insights are found, return empty arrays
 - All existing tasks MUST be included in the response with their status
+- **ONLY RETURN NEW CONTENT:** The actionItems and insights arrays should ONLY contain newly identified items that are NOT already in the existing lists. Do not include any existing action items or insights in your response.
 
 # IT IS VERY IMPORTANT YOU DO NOT GENERATE SIMILAR ACTION ITEMS OR INSIGHTS TO THE EXISTING ONES. ONLY NEW CONTENT THATS NOT REPEATED FROM THE EXISTING ONES. !!!!!!
 `;

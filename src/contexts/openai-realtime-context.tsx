@@ -36,7 +36,7 @@ interface SessionConfig {
   input_audio_transcription?: {
     model: "gpt-4o-mini-transcribe" | "gpt-4o-transcribe";
     prompt?: string;
-    language?: string;
+    language: 'en';
   };
   turn_detection?: {
     type: "server_vad";
