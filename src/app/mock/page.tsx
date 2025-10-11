@@ -47,6 +47,8 @@ export default function MockPage() {
   // Task Analysis state
   const [transcription, setTranscription] = useState('');
   const [taskAnalysisLoading, setTaskAnalysisLoading] = useState(false);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
 
   // Load objectives from localStorage on mount
   useEffect(() => {
@@ -215,10 +217,21 @@ export default function MockPage() {
             id: obj.id,
             title: obj.title,
             description: obj.description,
-            priority: obj.priority,
-            completed: obj.completed
           })),
-          transcription: transcription
+          transcription: transcription,
+          existingActionItems: actionItems.map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            priority: item.priority,
+            completed: item.completed,
+          })),
+          existingInsights: insights.map((insight) => ({
+            id: insight.id,
+            title: insight.title,
+            description: insight.description,
+            type: insight.type,
+          })),
         }),
       });
 
@@ -228,7 +241,35 @@ export default function MockPage() {
 
       const result = await response.json();
       console.log('Task analysis result:', result);
-      
+
+      // Update local state with new insights (deduplicate by ID)
+      if (result.insights && result.insights.length > 0) {
+        setInsights((prev) => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const newInsights = result.insights
+            .filter((insight: any) => !existingIds.has(insight.id))
+            .map((insight: any) => ({
+              ...insight,
+              timestamp: new Date(insight.timestamp),
+            }));
+          return [...newInsights, ...prev];
+        });
+      }
+
+      // Update local state with new action items (deduplicate by ID)
+      if (result.actionItems && result.actionItems.length > 0) {
+        setActionItems((prev) => {
+          const existingIds = new Set(prev.map(i => i.id));
+          const newActionItems = result.actionItems
+            .filter((item: any) => !existingIds.has(item.id))
+            .map((item: any) => ({
+              ...item,
+              timestamp: new Date(item.timestamp),
+            }));
+          return [...newActionItems, ...prev];
+        });
+      }
+
       // Emit socket event to update all clients
       if (socket) {
         socket.emit('update_task_analysis', {
@@ -237,7 +278,7 @@ export default function MockPage() {
         });
         console.log('📤 Task analysis results sent via socket');
       }
-      
+
       alert('Task analysis completed! Check the objectives above for updates.');
       
     } catch (error) {

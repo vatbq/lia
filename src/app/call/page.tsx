@@ -6,16 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import { getLatestCall, updateCall } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  ConnectionState,
-  RealtimeEvent,
-  useOpenAIRealtime,
-  TranscriptionData,
-} from "@/contexts/openai-realtime-context";
-import {
-  MicrophoneState,
-  useMicrophone,
-} from "@/contexts/microphone-context";
+import { ConnectionState, RealtimeEvent, useOpenAIRealtime, TranscriptionData } from "@/contexts/openai-realtime-context";
+import { MicrophoneState, useMicrophone } from "@/contexts/microphone-context";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -26,14 +18,14 @@ interface Objective {
   description?: string;
   completed?: boolean;
   priority: number;
-  status?: 'pending' | 'in_progress' | 'completed';
+  status?: "pending" | "in_progress" | "completed";
 }
 
 interface Insight {
   id: string;
   title: string;
   description: string;
-  type: 'positive' | 'negative' | 'neutral' | 'warning';
+  type: "positive" | "negative" | "neutral" | "warning";
   timestamp: Date;
 }
 
@@ -41,7 +33,7 @@ interface ActionItem {
   id: string;
   title: string;
   description: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   completed: boolean;
   timestamp: Date;
 }
@@ -52,11 +44,8 @@ interface Transcription {
   timestamp: number;
 }
 
-export default function CallPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ title?: string }>;
-}) {
+export default function CallPage({ searchParams }: { searchParams: Promise<{ title?: string }> }) {
+  const isCallingRef = useRef<boolean>(false);
   const params = use(searchParams);
   const router = useRouter();
   const title = params?.title || "Call";
@@ -66,43 +55,30 @@ export default function CallPage({
   const [currentCall, setCurrentCall] = useState<any>(null);
   const [isEndingCall, setIsEndingCall] = useState(false);
   const [completedObjectiveIds, setCompletedObjectiveIds] = useState<Set<string>>(new Set());
-  
+
   // Task Analysis state
-  const [transcription, setTranscription] = useState('');
+  const [transcription, setTranscription] = useState("");
   const [taskAnalysisLoading, setTaskAnalysisLoading] = useState(false);
-  const [lastAnalysisTranscription, setLastAnalysisTranscription] = useState('');
+  const [lastAnalysisTranscription, setLastAnalysisTranscription] = useState("");
 
   // Audio transcription state
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const transcriptionsRef = useRef<Transcription[]>([]);
+  const insightsRef = useRef<Insight[]>([]);
+  const actionItemsRef = useRef<ActionItem[]>([]);
   const hasSetupMicrophoneRef = useRef<boolean>(false);
   const hasMicrophoneStartedRef = useRef<boolean>(false);
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Audio hooks
-  const {
-    connection,
-    connectToOpenAI,
-    connectionState,
-    addListener,
-    removeListener,
-    send,
-  } = useOpenAIRealtime();
-  const {
-    setupMicrophone,
-    microphone,
-    startMicrophone,
-    stopMicrophone,
-    microphoneState,
-    addAudioDataListener,
-    removeAudioDataListener,
-  } = useMicrophone();
+  const { connection, connectToOpenAI, connectionState, addListener, removeListener, send } = useOpenAIRealtime();
+  const { setupMicrophone, microphone, startMicrophone, stopMicrophone, microphoneState, addAudioDataListener, removeAudioDataListener } = useMicrophone();
 
   // Load objectives from localStorage on mount
   useEffect(() => {
     const latestCall = getLatestCall();
     setCurrentCall(latestCall);
-    
+
     if (latestCall?.parsedObjectives && latestCall.parsedObjectives.length > 0) {
       const objectivesWithCompletion = latestCall.parsedObjectives.map((obj) => ({
         ...obj,
@@ -137,11 +113,18 @@ export default function CallPage({
     }
   }, []);
 
-  // Keep transcriptions ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     transcriptionsRef.current = transcriptions;
   }, [transcriptions]);
 
+  useEffect(() => {
+    insightsRef.current = insights;
+  }, [insights]);
+
+  useEffect(() => {
+    actionItemsRef.current = actionItems;
+  }, [actionItems]);
 
   // Auto-setup microphone on mount
   useEffect(() => {
@@ -191,21 +174,19 @@ export default function CallPage({
 
       if (transcript && transcript !== "") {
         console.log("[CallPage] Transcript received:", transcript);
-        
+
         const newTranscription = {
           id: transcriptData.item_id,
           text: transcript,
           timestamp: Date.now(),
         };
-        
+
         setTranscriptions((prev) => [...prev, newTranscription]);
         console.log("[CallPage] Transcript added to list");
 
         // Auto-trigger debounced task analysis with accumulated transcription
-        const accumulatedTranscription = [...transcriptionsRef.current, newTranscription]
-          .map(t => t.text)
-          .join(" ");
-        
+        const accumulatedTranscription = [...transcriptionsRef.current, newTranscription].map((t) => t.text).join(" ");
+
         console.log("[CallPage] Triggering debounced task analysis with:", accumulatedTranscription);
         debouncedAnalyzeTasks(accumulatedTranscription);
       } else {
@@ -239,70 +220,80 @@ export default function CallPage({
       console.log("[CallPage] Cleaning up audio listeners");
       removeListener(RealtimeEvent.Transcript, onTranscript);
       removeAudioDataListener(onAudioData);
-      
+
       // Clear any pending analysis timeout
       if (analysisTimeoutRef.current) {
         clearTimeout(analysisTimeoutRef.current);
       }
     };
-  }, [
-    connectionState,
-    connection,
-    microphone,
-    addListener,
-    removeListener,
-    send,
-    addAudioDataListener,
-    removeAudioDataListener,
-    startMicrophone,
-    stopMicrophone,
-  ]);
+  }, [connectionState, connection, microphone, addListener, removeListener, send, addAudioDataListener, removeAudioDataListener, startMicrophone, stopMicrophone]);
 
   const completeActionItem = (id: string) => {
-    setActionItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, completed: true } : item
-      )
-    );
+    setActionItems((prev) => prev.map((item) => (item.id === id ? { ...item, completed: true } : item)));
   };
 
   const analyzeTasks = async (transcriptionText?: string) => {
-    const textToAnalyze = transcriptionText || transcription;
-    
-    if (!textToAnalyze.trim()) {
-      console.log('No transcription text to analyze');
+    if (isCallingRef.current) {
+      console.log("Analysis already in progress, skipping");
       return;
     }
 
-    const incompleteObjectives = objectives.filter(obj => !obj.completed);
+    isCallingRef.current = true;
+    const textToAnalyze = transcriptionText || transcription;
+
+    if (!textToAnalyze.trim()) {
+      console.log("No transcription text to analyze");
+      return;
+    }
+
+    const incompleteObjectives = objectives.filter((obj) => !obj.completed);
     if (incompleteObjectives.length === 0) {
-      console.log('No incomplete objectives available to analyze');
+      console.log("No incomplete objectives available to analyze");
       return;
     }
 
     // Prevent duplicate analysis of the same transcription
     if (textToAnalyze === lastAnalysisTranscription) {
-      console.log('Skipping duplicate analysis for same transcription');
+      console.log("Skipping duplicate analysis for same transcription");
+      return;
+    }
+
+    // Prevent concurrent analysis
+    if (taskAnalysisLoading) {
+      console.log("Analysis already in progress, skipping");
       return;
     }
 
     setTaskAnalysisLoading(true);
-    
+
     try {
-      const response = await fetch('/api/analyze-tasks', {
-        method: 'POST',
+      const response = await fetch("/api/analyze-tasks", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           tasks: objectives
-            .filter(obj => !obj.completed)
-            .map(obj => ({
+            .filter((obj) => !obj.completed)
+            .map((obj) => ({
               id: obj.id,
               title: obj.title,
-              description: obj.description
+              description: obj.description,
             })),
-          transcription: textToAnalyze
+          transcription: textToAnalyze,
+          existingActionItems: actionItemsRef.current.map((item) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            priority: item.priority,
+            completed: item.completed,
+          })),
+          existingInsights: insightsRef.current.map((insight) => ({
+            id: insight.id,
+            title: insight.title,
+            description: insight.description,
+            type: insight.type,
+          })),
         }),
       });
 
@@ -311,11 +302,11 @@ export default function CallPage({
       }
 
       const result = await response.json();
-      console.log('Task analysis result:', JSON.stringify(result, null, 2));
-      
+      console.log("Task analysis result:", JSON.stringify(result, null, 2));
+
       // Update the last analyzed transcription
       setLastAnalysisTranscription(textToAnalyze);
-      
+
       // Update objectives directly from API response
       setObjectives((prev) => {
         return prev.map((obj) => {
@@ -330,7 +321,7 @@ export default function CallPage({
             return {
               ...obj,
               completed: taskAnalysis.completed,
-              status: taskAnalysis.completed ? 'completed' : 'pending'
+              status: taskAnalysis.completed ? "completed" : "pending",
             };
           }
           return obj;
@@ -349,36 +340,46 @@ export default function CallPage({
         return newSet;
       });
 
-      // Add new insights from API response
+      // Add new insights from API response (deduplicate by ID)
       if (result.insights && result.insights.length > 0) {
-        const newInsights = result.insights.map((insight: any) => ({
-          ...insight,
-          timestamp: new Date(insight.timestamp)
-        }));
-        setInsights((prev) => [...newInsights, ...prev]);
+        setInsights((prev) => {
+          const existingIds = new Set(prev.map((i) => i.id));
+          const newInsights = result.insights
+            .filter((insight: any) => !existingIds.has(insight.id))
+            .map((insight: any) => ({
+              ...insight,
+              timestamp: new Date(insight.timestamp),
+            }));
+          return [...newInsights, ...prev];
+        });
       }
 
-      // Add new action items from API response
+      // Add new action items from API response (deduplicate by ID)
       if (result.actionItems && result.actionItems.length > 0) {
-        const newActionItems = result.actionItems.map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        }));
-        setActionItems((prev) => [...newActionItems, ...prev]);
+        setActionItems((prev) => {
+          const existingIds = new Set(prev.map((i) => i.id));
+          const newActionItems = result.actionItems
+            .filter((item: any) => !existingIds.has(item.id))
+            .map((item: any) => ({
+              ...item,
+              timestamp: new Date(item.timestamp),
+            }));
+          return [...newActionItems, ...prev];
+        });
       }
-      
+
       // Only show alert for manual analysis (when no transcriptionText parameter)
       if (!transcriptionText) {
-        alert('Task analysis completed! Check the objectives above for updates.');
+        alert("Task analysis completed! Check the objectives above for updates.");
       }
-      
     } catch (error) {
-      console.error('Error analyzing tasks:', error);
+      console.error("Error analyzing tasks:", error);
       if (!transcriptionText) {
-        alert('Failed to analyze tasks. Check console for details.');
+        alert("Failed to analyze tasks. Check console for details.");
       }
     } finally {
       setTaskAnalysisLoading(false);
+      isCallingRef.current = false;
     }
   };
 
@@ -388,16 +389,23 @@ export default function CallPage({
       clearTimeout(analysisTimeoutRef.current);
     }
 
-    // Set new timeout for 3 seconds
+    // Only analyze if there's significant new content (at least 50 new characters)
+    const newContentLength = transcriptionText.length - lastAnalysisTranscription.length;
+    if (newContentLength < 50) {
+      console.log("[CallPage] Not enough new content for analysis:", newContentLength, "characters");
+      return;
+    }
+
+    // Set new timeout for 6 seconds (much longer to reduce API calls)
     analysisTimeoutRef.current = setTimeout(() => {
-      console.log('[CallPage] Debounced task analysis triggered');
+      console.log("[CallPage] Debounced task analysis triggered");
       analyzeTasks(transcriptionText);
-    }, 3000);
+    }, 2000);
   };
 
   const endCall = async () => {
     if (!currentCall) {
-      console.error('No current call found');
+      console.error("No current call found");
       return;
     }
 
@@ -405,27 +413,27 @@ export default function CallPage({
 
     try {
       // Convert Date objects to ISO strings for storage
-      const insightsForStorage = insights.map(insight => ({
+      const insightsForStorage = insights.map((insight) => ({
         ...insight,
-        timestamp: insight.timestamp.toISOString()
+        timestamp: insight.timestamp.toISOString(),
       }));
 
-      const actionItemsForStorage = actionItems.map(item => ({
+      const actionItemsForStorage = actionItems.map((item) => ({
         ...item,
-        timestamp: item.timestamp.toISOString()
+        timestamp: item.timestamp.toISOString(),
       }));
 
       // Convert objectives to storage format
-      const objectivesForStorage = objectives.map(obj => ({
+      const objectivesForStorage = objectives.map((obj) => ({
         ...obj,
         // Ensure status is set correctly based on completion
-        status: (obj.completed ? 'completed' : 'pending') as 'pending' | 'in_progress' | 'completed'
+        status: (obj.completed ? "completed" : "pending") as "pending" | "in_progress" | "completed",
       }));
 
       // Convert transcriptions to storage format
-      const transcriptionsForStorage = transcriptions.map(t => ({
+      const transcriptionsForStorage = transcriptions.map((t) => ({
         ...t,
-        timestamp: new Date(t.timestamp).toISOString()
+        timestamp: new Date(t.timestamp).toISOString(),
       }));
 
       // Update the call with insights, action items, objectives, and transcriptions
@@ -435,57 +443,57 @@ export default function CallPage({
         objectivesArray: objectivesForStorage,
         completedObjectives: Array.from(completedObjectiveIds),
         transcriptions: transcriptionsForStorage,
-        endedAt: new Date().toISOString()
+        endedAt: new Date().toISOString(),
       });
 
       if (updatedCall) {
-        console.log('Call ended successfully:', JSON.stringify(updatedCall, null, 2));
+        console.log("Call ended successfully:", JSON.stringify(updatedCall, null, 2));
         // Navigate to the call detail page
         router.push(`/call/${currentCall.id}`);
       } else {
-        console.error('Failed to update call');
+        console.error("Failed to update call");
       }
     } catch (error) {
-      console.error('Error ending call:', error);
+      console.error("Error ending call:", error);
     } finally {
       setIsEndingCall(false);
     }
   };
 
-  const getInsightIcon = (type: Insight['type']) => {
+  const getInsightIcon = (type: Insight["type"]) => {
     switch (type) {
-      case 'positive':
+      case "positive":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'negative':
+      case "negative":
         return <AlertTriangle className="w-4 h-4 text-red-600" />;
-      case 'warning':
+      case "warning":
         return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
       default:
         return <Info className="w-4 h-4 text-blue-600" />;
     }
   };
 
-  const getInsightColor = (type: Insight['type']) => {
+  const getInsightColor = (type: Insight["type"]) => {
     switch (type) {
-      case 'positive':
-        return 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800';
-      case 'negative':
-        return 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800';
+      case "positive":
+        return "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800";
+      case "negative":
+        return "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800";
+      case "warning":
+        return "bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800";
       default:
-        return 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800';
+        return "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800";
     }
   };
 
-  const getActionItemPriorityColor = (priority: ActionItem['priority']) => {
+  const getActionItemPriorityColor = (priority: ActionItem["priority"]) => {
     switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400';
-      case 'medium':
-        return 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400';
+      case "high":
+        return "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400";
+      case "medium":
+        return "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400";
       default:
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400';
+        return "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400";
     }
   };
 
@@ -498,33 +506,13 @@ export default function CallPage({
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold">{title}</h1>
-                <p className="mt-2 text-lg text-muted-foreground">
-                  Live insights and action items from your call
-                </p>
+                <p className="mt-2 text-lg text-muted-foreground">Live insights and action items from your call</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      connectionState === ConnectionState.OPEN
-                        ? "bg-green-500 animate-pulse"
-                        : connectionState === ConnectionState.CONNECTING
-                        ? "bg-yellow-500 animate-pulse"
-                        : "bg-red-500"
-                    }`}
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    {connectionState === ConnectionState.OPEN
-                      ? "Transcription active"
-                      : connectionState === ConnectionState.CONNECTING
-                      ? "Connecting..."
-                      : "Disconnected"}
-                  </span>
+                  <div className={`w-2 h-2 rounded-full ${connectionState === ConnectionState.OPEN ? "bg-green-500 animate-pulse" : connectionState === ConnectionState.CONNECTING ? "bg-yellow-500 animate-pulse" : "bg-red-500"}`} />
+                  <span className="text-xs text-muted-foreground">{connectionState === ConnectionState.OPEN ? "Transcription active" : connectionState === ConnectionState.CONNECTING ? "Connecting..." : "Disconnected"}</span>
                 </div>
               </div>
-              <Button
-                onClick={endCall}
-                disabled={isEndingCall || !currentCall}
-                className="gap-2 bg-red-600 hover:bg-red-700 text-white"
-              >
+              <Button onClick={endCall} disabled={isEndingCall || !currentCall} className="gap-2 bg-red-600 hover:bg-red-700 text-white">
                 <PhoneOff className="w-4 h-4" />
                 {isEndingCall ? "Ending Call..." : "End Call"}
               </Button>
@@ -535,13 +523,9 @@ export default function CallPage({
           {transcriptions.length > 0 && (
             <div className="mb-6">
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg border p-4">
-                <h3 className="text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">
-                  Live Transcription
-                </h3>
+                <h3 className="text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Live Transcription</h3>
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-slate-900 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap">
-                    {transcriptions.map((t) => t.text).join(" ")}
-                  </p>
+                  <p className="text-slate-900 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap">{transcriptions.map((t) => t.text).join(" ")}</p>
                 </div>
               </div>
             </div>
@@ -555,27 +539,14 @@ export default function CallPage({
             <div className="space-y-4">
               <div>
                 <Label htmlFor="transcription">Transcription</Label>
-                <Textarea
-                  id="transcription"
-                  placeholder="Enter conversation transcription to analyze tasks..."
-                  value={transcription}
-                  onChange={(e) => setTranscription(e.target.value)}
-                  className="mt-1"
-                  rows={4}
-                />
+                <Textarea id="transcription" placeholder="Enter conversation transcription to analyze tasks..." value={transcription} onChange={(e) => setTranscription(e.target.value)} className="mt-1" rows={4} />
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => analyzeTasks()}
-                  disabled={taskAnalysisLoading || !transcription.trim() || objectives.filter(obj => !obj.completed).length === 0}
-                  className="gap-2"
-                >
+                <Button onClick={() => analyzeTasks()} disabled={taskAnalysisLoading || !transcription.trim() || objectives.filter((obj) => !obj.completed).length === 0} className="gap-2">
                   <Brain className="w-4 h-4" />
-                  {taskAnalysisLoading ? 'Analyzing...' : 'Analyze Tasks'}
+                  {taskAnalysisLoading ? "Analyzing..." : "Analyze Tasks"}
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  Uses incomplete objectives ({objectives.filter(obj => !obj.completed).length} tasks)
-                </span>
+                <span className="text-xs text-muted-foreground">Uses incomplete objectives ({objectives.filter((obj) => !obj.completed).length} tasks)</span>
               </div>
             </div>
           </Card>
@@ -586,40 +557,27 @@ export default function CallPage({
               <div className="flex items-center gap-2 mb-4">
                 <Lightbulb className="w-6 h-6" />
                 <h2 className="text-xl font-semibold">Live Insights</h2>
-                {insights.length > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    ({insights.length})
-                  </span>
-                )}
+                {insights.length > 0 && <span className="text-sm text-muted-foreground">({insights.length})</span>}
               </div>
-              
+
               {insights.length === 0 ? (
                 <div className="p-8 border border-dashed rounded-lg text-center text-muted-foreground">
                   <Lightbulb className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium mb-2">No insights yet</p>
-                  <p className="text-sm">
-                    Insights will appear here as the AI analyzes the conversation
-                  </p>
+                  <p className="text-sm">Insights will appear here as the AI analyzes the conversation</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {insights.map((insight) => (
-                    <div
-                      key={insight.id}
-                      className={`p-4 rounded-lg border transition-all duration-300 animate-in slide-in-from-right ${getInsightColor(insight.type)}`}
-                    >
+                    <div key={insight.id} className={`p-4 rounded-lg border transition-all duration-300 animate-in slide-in-from-right ${getInsightColor(insight.type)}`}>
                       <div className="flex items-start gap-3">
                         {getInsightIcon(insight.type)}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base font-medium">{insight.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {insight.description}
-                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">{insight.description}</p>
                           <div className="flex items-center gap-2 mt-2">
                             <Clock className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(insight.timestamp).toLocaleTimeString()}
-                            </span>
+                            <span className="text-xs text-muted-foreground">{new Date(insight.timestamp).toLocaleTimeString()}</span>
                           </div>
                         </div>
                       </div>
@@ -634,20 +592,14 @@ export default function CallPage({
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle2 className="w-6 h-6" />
                 <h2 className="text-xl font-semibold">Action Items</h2>
-                {actionItems.length > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    ({actionItems.length})
-                  </span>
-                )}
+                {actionItems.length > 0 && <span className="text-sm text-muted-foreground">({actionItems.length})</span>}
               </div>
-              
+
               {actionItems.length === 0 ? (
                 <div className="p-8 border border-dashed rounded-lg text-center text-muted-foreground">
                   <CheckCircle2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium mb-2">No action items yet</p>
-                  <p className="text-sm">
-                    Action items will appear here as they are identified
-                  </p>
+                  <p className="text-sm">Action items will appear here as they are identified</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -655,42 +607,23 @@ export default function CallPage({
                     <div
                       key={item.id}
                       className={`p-4 rounded-lg border transition-all duration-300 animate-in slide-in-from-right ${
-                        item.completed
-                          ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75"
-                          : "bg-background border-border hover:border-primary/50"
+                        item.completed ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75" : "bg-background border-border hover:border-primary/50"
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          {item.completed ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </div>
+                        <div className="mt-0.5">{item.completed ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Circle className="w-5 h-5 text-muted-foreground" />}</div>
                         <div className="flex-1 min-w-0">
-                          <h3 className={`text-base font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>
-                            {item.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {item.description || 'No description'}
-                          </p>
+                          <h3 className={`text-base font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>{item.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">{item.description || "No description"}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${getActionItemPriorityColor(item.priority)}`}>
-                              {item.priority}
-                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${getActionItemPriorityColor(item.priority)}`}>{item.priority}</span>
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(item.timestamp).toLocaleTimeString()}
-                              </span>
+                              <span className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleTimeString()}</span>
                             </div>
                           </div>
                           {!item.completed && (
-                            <button
-                              onClick={() => completeActionItem(item.id)}
-                              className="mt-2 text-sm text-primary hover:underline font-medium"
-                            >
+                            <button onClick={() => completeActionItem(item.id)} className="mt-2 text-sm text-primary hover:underline font-medium">
                               Mark as complete
                             </button>
                           )}
@@ -715,11 +648,7 @@ export default function CallPage({
                 key={objective.id}
                 className={`
                   p-4 rounded-lg border transition-all duration-500 ease-out
-                  ${
-                    objective.completed
-                      ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 scale-[0.98] opacity-90"
-                      : "bg-background border-border hover:border-primary/50"
-                  }
+                  ${objective.completed ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 scale-[0.98] opacity-90" : "bg-background border-border hover:border-primary/50"}
                 `}
               >
                 <div className="flex items-start gap-3">
@@ -729,28 +658,18 @@ export default function CallPage({
                       ${objective.completed ? "scale-110" : ""}
                     `}
                   >
-                    {objective.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 animate-in zoom-in duration-300" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-muted-foreground" />
-                    )}
+                    {objective.completed ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 animate-in zoom-in duration-300" /> : <Circle className="w-5 h-5 text-muted-foreground" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3
                       className={`
                         text-sm font-medium transition-all duration-300
-                        ${
-                          objective.completed
-                            ? "line-through text-muted-foreground"
-                            : ""
-                        }
+                        ${objective.completed ? "line-through text-muted-foreground" : ""}
                       `}
                     >
                       {objective.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {objective.description || 'No description'}
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{objective.description || "No description"}</p>
                     <span
                       className={`
                         inline-block mt-2 text-xs px-2 py-0.5 rounded-full
@@ -776,19 +695,14 @@ export default function CallPage({
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Progress</span>
               <span className="font-medium">
-                {objectives.filter((o) => o.completed).length} /{" "}
-                {objectives.length}
+                {objectives.filter((o) => o.completed).length} / {objectives.length}
               </span>
             </div>
             <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-green-500 transition-all duration-500 ease-out"
                 style={{
-                  width: `${
-                    (objectives.filter((o) => o.completed).length /
-                      objectives.length) *
-                    100
-                  }%`,
+                  width: `${(objectives.filter((o) => o.completed).length / objectives.length) * 100}%`,
                 }}
               />
             </div>

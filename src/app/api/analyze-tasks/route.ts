@@ -13,6 +13,23 @@ const requestSchema = z.object({
     })
   ),
   transcription: z.string(),
+  existingActionItems: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      priority: z.enum(["low", "medium", "high"]).optional(),
+      completed: z.boolean(),
+    })
+  ),
+  existingInsights: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      description: z.string(),
+      type: z.enum(["positive", "negative", "neutral", "warning"]),
+    })
+  ),
 });
 
 // Schema for the response
@@ -49,12 +66,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { tasks, transcription } = requestSchema.parse(body);
+    const { tasks, transcription, existingActionItems, existingInsights } = requestSchema.parse(body);
 
     // Prepare the context for the AI
     const conversationText = transcription;
 
     const tasksText = tasks.map((task: any) => `- ${task.id}: ${task.title}${task.description ? ` - ${task.description}` : ""}`).join("\n");
+
+    const existingActionItemsText = existingActionItems.length > 0 ? existingActionItems.map((item: any) => `- ${item.title}${item.description ? `: ${item.description}` : ""}`).join("\n") : "None";
+
+    const existingInsightsText = existingInsights.length > 0 ? existingInsights.map((insight: any) => `- [${insight.type}] ${insight.title}: ${insight.description}`).join("\n") : "None";
+
+    console.log("existingActionItemsText", existingActionItemsText);
+    console.log("existingInsightsText", existingInsightsText);
 
     const prompt = `You are an intelligent task and conversation analyzer. Your job is to carefully analyze the conversation transcript and determine the status of existing tasks, extract new action items, and generate valuable insights.
 
@@ -63,6 +87,12 @@ ${conversationText}
 
 # EXISTING TASKS TO ANALYZE
 ${tasksText}
+
+# EXISTING ACTION ITEMS (DO NOT DUPLICATE THESE)
+${existingActionItemsText}
+
+# EXISTING INSIGHTS (DO NOT DUPLICATE THESE)
+${existingInsightsText}
 
 # YOUR RESPONSIBILITIES
 
@@ -87,7 +117,9 @@ For each task in the list above, carefully determine if it has been completed ba
 - \`message\`: If completed, explain what was done and how you know it's complete (2-3 sentences). If not completed, provide an empty string "".
 
 ## 2. ACTION ITEMS EXTRACTION
-Scan the conversation for NEW action items, tasks, or commitments that were discussed but are NOT in the existing task list.
+Scan the conversation for NEW action items, tasks, or commitments that were discussed but are NOT in the existing task list OR existing action items list.
+
+**IMPORTANT:** Review the "EXISTING ACTION ITEMS" section above. DO NOT create action items that are already captured or very similar to what's already listed.
 
 **Look for:**
 - Explicit commitments: "I'll...", "We need to...", "Let's...", "I will..."
@@ -100,6 +132,8 @@ Scan the conversation for NEW action items, tasks, or commitments that were disc
 **Do NOT extract:**
 - Vague or hypothetical discussions without commitment
 - Tasks that are already in the existing task list
+- Action items that are already in the existing action items list
+- Action items very similar to existing ones (avoid duplicates)
 - General observations without actionable outcomes
 
 **For each action item provide:**
@@ -113,19 +147,39 @@ Scan the conversation for NEW action items, tasks, or commitments that were disc
 - \`completed\`: false (these are newly identified items)
 
 ## 3. INSIGHTS GENERATION
-Generate 2-5 key insights about the conversation that provide value and context.
+Generate ONLY **EXCEPTIONAL** insights that represent MAJOR developments or critical information.
 
-**Insight Types:**
-- \`positive\`: Achievements, successes, good progress, wins, completed goals, positive outcomes
-- \`negative\`: Problems, failures, setbacks, missed deadlines, blockers, concerns raised
-- \`warning\`: Risks, potential issues, things to watch out for, red flags, concerning trends
-- \`neutral\`: Important observations, decisions made, status updates, factual developments
+**CRITICAL RESTRICTIONS:**
+- Review "EXISTING INSIGHTS" - DO NOT create similar or duplicate insights
+- **DEFAULT TO EMPTY ARRAY** - Most conversations should generate ZERO new insights
+- Only create insights for truly exceptional, high-impact information
 
-**Quality Guidelines:**
-- Be specific and reference concrete details from the conversation
-- Focus on significant information, not trivial observations
-- Provide context and implications, not just facts
-- Each insight should add unique value
+**When to Generate Insights (VERY RARELY):**
+- MAJOR project milestones completed
+- CRITICAL problems or blockers identified
+- SIGNIFICANT strategic decisions made
+- HIGH-IMPACT risks or warnings discovered
+
+**DO NOT Generate Insights For:**
+- Normal work progress or routine updates
+- Minor issues or small problems
+- Regular task completion (this goes in task status)
+- General observations or thoughts mentioned
+- Anything that's not exceptionally significant
+- Information already in action items
+- Discussions without major outcomes
+
+**Insight Types (use only for exceptional cases):**
+- \`positive\`: Major achievements, critical wins, significant completed goals
+- \`negative\`: Serious problems, major failures, critical blockers
+- \`warning\`: High-risk situations, serious red flags, urgent concerns
+- \`neutral\`: Major strategic decisions, significant pivots
+
+**Quality Guidelines (EXTREMELY STRICT):**
+- **Maximum 0-1 insights per topic** (2 only in exceptional cases)
+- Each insight must represent MAJOR new information
+- If in doubt, DO NOT generate the insight
+- Empty array is the correct answer most of the time
 
 **For each insight provide:**
 - \`id\`: Generate a unique ID (use format: "insight-[timestamp]-[random]")
@@ -166,10 +220,15 @@ Return your analysis in the following structure (all arrays, no nested objects):
 # IMPORTANT NOTES
 - Be thorough but accurate - only mark tasks as completed if there's clear evidence
 - Generate IDs that are unique and won't collide (use timestamp + random string)
-- Prioritize quality over quantity for insights - 2-3 excellent insights are better than 10 mediocre ones
+- **DO NOT DUPLICATE:** Review existing action items and insights carefully - do not create duplicates or very similar items
+- **INSIGHTS ARE RARE:** Most conversations should generate ZERO insights. Default to empty array unless there's MAJOR new information
+- **Maximum 0-1 insights** per conversation (2 only in exceptional cases with critical information)
 - Use professional, clear language in all messages and descriptions
-- If no action items or insights are found, return empty arrays
-- All existing tasks MUST be included in the response with their status`;
+- If no NEW action items or insights are found, return empty arrays
+- All existing tasks MUST be included in the response with their status
+
+# IT IS VERY IMPORTANT YOU DO NOT GENERATE SIMILAR ACTION ITEMS OR INSIGHTS TO THE EXISTING ONES. ONLY NEW CONTENT THATS NOT REPEATED FROM THE EXISTING ONES. !!!!!!
+`;
 
     const { object } = await generateObject({
       model: google("gemini-2.5-flash-lite"),
