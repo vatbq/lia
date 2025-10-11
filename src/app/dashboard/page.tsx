@@ -59,9 +59,9 @@ export default function DashboardPage() {
 
   if (calls.length === 0) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center">
+      <div className="w-full flex items-center justify-center" style={{ height: 'calc(100vh - 100px)' }}>
         <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-1000">
-          <h1 className="text-6xl font-bold tracking-tight text-center animate-in fade-in-50 slide-in-from-bottom-3 duration-700">
+          <h1 className="text-6xl font-bold tracking-tight text-center animate-in fade-in-50 slide-in-from-bottom-3 duration-700" style={{ fontFamily: 'var(--font-archivo-black)' }}>
             LIA
           </h1>
           <p className="text-2xl text-muted-foreground text-center animate-in fade-in-50 slide-in-from-bottom-4 duration-1000 delay-200">
