@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Send, AlertCircle } from "lucide-react";
+import { CheckCircle2, Send, AlertCircle, Lightbulb, CheckCircle } from "lucide-react";
 import { getLatestCall } from "@/lib/storage";
 
 interface Objective {
@@ -12,6 +12,23 @@ interface Objective {
   name: string;
   description: string;
   priority: number;
+}
+
+interface Insight {
+  id: string;
+  title: string;
+  description: string;
+  type: 'positive' | 'negative' | 'neutral' | 'warning';
+  timestamp: Date;
+}
+
+interface ActionItem {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  completed: boolean;
+  timestamp: Date;
 }
 
 export default function MockPage() {
@@ -60,7 +77,7 @@ export default function MockPage() {
     const newSocket: Socket = io("http://localhost:3000");
 
     newSocket.on("connect", () => {
-      console.log("Mock page connected:", newSocket.id);
+      console.log("Mock page Socket.IO connected:", newSocket.id);
       setConnected(true);
     });
 
@@ -84,9 +101,92 @@ export default function MockPage() {
     }
   };
 
+  const triggerInsight = (insight: Insight) => {
+    if (socket) {
+      // Convert Date to ISO string for JSON serialization
+      const insightData = {
+        ...insight,
+        timestamp: insight.timestamp.toISOString()
+      };
+      console.log("Emitting trigger_insight:", insightData);
+      socket.emit("trigger_insight", insightData);
+    }
+  };
+
+  const triggerActionItem = (actionItem: ActionItem) => {
+    if (socket) {
+      // Convert Date to ISO string for JSON serialization
+      const actionItemData = {
+        ...actionItem,
+        timestamp: actionItem.timestamp.toISOString()
+      };
+      console.log("Emitting trigger_action_item:", actionItemData);
+      socket.emit("trigger_action_item", actionItemData);
+    }
+  };
+
   const resetAll = () => {
     setCompletedIds(new Set());
   };
+
+  // Sample insights and action items for testing
+  const sampleInsights: Insight[] = [
+    {
+      id: "insight-1",
+      title: "Positive Energy Detected",
+      description: "The conversation shows high engagement and positive sentiment",
+      type: "positive",
+      timestamp: new Date(),
+    },
+    {
+      id: "insight-2",
+      title: "Budget Concern Raised",
+      description: "Client mentioned budget constraints that need attention",
+      type: "warning",
+      timestamp: new Date(),
+    },
+    {
+      id: "insight-3",
+      title: "Timeline Discussion",
+      description: "Both parties are aligned on project timeline expectations",
+      type: "neutral",
+      timestamp: new Date(),
+    },
+    {
+      id: "insight-4",
+      title: "Technical Complexity",
+      description: "The project requirements seem more complex than initially discussed",
+      type: "negative",
+      timestamp: new Date(),
+    },
+  ];
+
+  const sampleActionItems: ActionItem[] = [
+    {
+      id: "action-1",
+      title: "Send Proposal",
+      description: "Prepare and send detailed project proposal by end of week",
+      priority: "high",
+      completed: false,
+      timestamp: new Date(),
+    },
+    {
+      id: "action-2",
+      title: "Schedule Follow-up",
+      description: "Book a follow-up meeting to discuss technical details",
+      priority: "medium",
+      completed: false,
+      timestamp: new Date(),
+    },
+    {
+      id: "action-3",
+      title: "Research Competitors",
+      description: "Gather information about competitor pricing and features",
+      priority: "low",
+      completed: false,
+      timestamp: new Date(),
+    },
+  ];
 
   return (
     <div className="min-h-screen w-full px-6 py-10 sm:px-8 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
@@ -110,6 +210,18 @@ export default function MockPage() {
               {connected ? "Connected to Socket.IO" : "Disconnected"}
             </span>
           </div>
+          <button
+            onClick={() => {
+              if (socket) {
+                console.log("Testing basic socket emit...");
+                socket.emit("test_event", { message: "Hello from mock page" });
+              }
+            }}
+            className="mt-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+            disabled={!connected}
+          >
+            Test Basic Socket
+          </button>
         </Card>
 
         {/* Instructions */}
@@ -118,8 +230,8 @@ export default function MockPage() {
           <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
             <li>Set up objectives on the home page first</li>
             <li>Open the call page in another browser tab or window</li>
-            <li>Click the buttons below to complete objectives</li>
-            <li>Watch the objectives update in real-time on the call page</li>
+            <li>Click the buttons below to trigger events</li>
+            <li>Watch objectives, insights, and action items update in real-time on the call page</li>
             <li>Use "Reset All" to clear completed status (local only)</li>
           </ol>
         </Card>
@@ -203,6 +315,84 @@ export default function MockPage() {
             </div>
           </Card>
         )}
+
+        {/* Insights Triggers */}
+        <Card className="p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Lightbulb className="w-5 h-5" />
+            Trigger Insights
+          </h2>
+          <div className="space-y-3">
+            {sampleInsights.map((insight) => (
+              <div
+                key={insight.id}
+                className="flex items-center justify-between p-4 rounded-lg border bg-background"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">{insight.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {insight.description}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-muted-foreground">
+                        Type: {insight.type}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => triggerInsight(insight)}
+                  disabled={!connected}
+                  className="gap-2 ml-3"
+                  variant="outline"
+                >
+                  <Lightbulb className="w-4 h-4" />
+                  Trigger
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Action Items Triggers */}
+        <Card className="p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            Trigger Action Items
+          </h2>
+          <div className="space-y-3">
+            {sampleActionItems.map((actionItem) => (
+              <div
+                key={actionItem.id}
+                className="flex items-center justify-between p-4 rounded-lg border bg-background"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">{actionItem.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {actionItem.description}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-muted-foreground">
+                        Priority: {actionItem.priority}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => triggerActionItem(actionItem)}
+                  disabled={!connected}
+                  className="gap-2 ml-3"
+                  variant="outline"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Trigger
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
 
         {/* Quick Links */}
         <Card className="p-6 mt-6">

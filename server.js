@@ -32,11 +32,41 @@ app.prepare().then(() => {
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
+    // Test event listener
+    socket.on("test_event", (data) => {
+      console.log("Test event received:", data);
+      // Broadcast to all clients
+      io.emit("test_event", data);
+    });
+
     // Listen for objective completion triggers from mock page
     socket.on("complete_objective", (data) => {
       console.log("Objective completed:", data);
       // Broadcast to all clients
       io.emit("objective_complete", data);
+    });
+
+    // Listen for insight triggers from mock page
+    socket.on("trigger_insight", (data) => {
+      console.log("Insight triggered:", data);
+      console.log("Broadcasting new_insight to all clients");
+      // Broadcast to all clients
+      io.emit("new_insight", data);
+    });
+
+    // Listen for action item triggers from mock page
+    socket.on("trigger_action_item", (data) => {
+      console.log("Action item triggered:", data);
+      console.log("Broadcasting new_action_item to all clients");
+      // Broadcast to all clients
+      io.emit("new_action_item", data);
+    });
+
+    // Listen for action item completion from call page
+    socket.on("complete_action_item", (data) => {
+      console.log("Action item completed:", data);
+      // Broadcast to all clients
+      io.emit("action_item_complete", data);
     });
 
     socket.on("disconnect", () => {
