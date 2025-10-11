@@ -21,26 +21,20 @@ type Objective = {
 
 const FormSchema = z.object({
   name: z.string().min(1),
-  context: z
-    .string()
-    .min(10, "Please add more context (min 10 chars)")
-    .max(2000),
-  objectives: z
-    .string()
-    .min(10, "Please detail the objectives (min 10 chars)")
-    .max(2000),
+  context: z.string().min(10, "Please add more context (min 10 chars)").max(2000),
+  objectives: z.string().min(10, "Please detail the objectives (min 10 chars)").max(2000),
 });
 
 export default function Home() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [context, setContext] = useState(
-    "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.",
+    "Demo call for LIA - an AI-powered meeting assistant that provides real-time insights, action items, and objective tracking. Participants: Sales Rep, Technical Lead, and Potential Client. Current state: Client is interested in AI meeting tools and wants to understand LIA's capabilities."
   );
   const [objectives, setObjectives] = useState(
-    "1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics",
+    "1. Demonstrate LIA's real-time transcription and analysis 2. Show live insights and action item generation 3. Explain integration with Slack and Teams 4. Discuss security and compliance features 5. Address pricing and next steps"
   );
-  const [name, setName] = useState("Q4 Strategy Planning");
+  const [name, setName] = useState("LIA Product Demo");
   const [loading, setLoading] = useState(false);
   const [parsedObjectives, setParsedObjectives] = useState<Objective[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -72,51 +66,28 @@ export default function Home() {
     return Math.max(1, Math.min(5, num));
   }
 
-  // Mock objectives for default values
+  // Mock objectives for LIA demo default values
   const mockObjectives: Objective[] = [
     {
       id: uuidv4(),
-      title: "Review Q3 Progress",
-      description: "Assess current progress against Q3 goals and identify gaps",
+      title: "Show Real-time Transcription",
+      description: "Demonstrate LIA's live transcription capabilities with accurate speech-to-text",
       completed: false,
       priority: 1,
     },
     {
       id: uuidv4(),
-      title: "Identify Q4 Features",
-      description: "Select top 3 features to prioritize for Q4 development",
+      title: "Demonstrate Live Insights",
+      description: "Show how LIA generates real-time insights and sentiment analysis during meetings",
       completed: false,
       priority: 1,
     },
     {
       id: uuidv4(),
-      title: "Assign Ownership",
-      description:
-        "Assign clear ownership and responsibilities for each Q4 feature",
+      title: "Show Action Item Generation",
+      description: "Demonstrate automatic action item creation when commitments are made",
       completed: false,
       priority: 2,
-    },
-    {
-      id: uuidv4(),
-      title: "Set Timelines",
-      description:
-        "Establish realistic timelines and milestones for Q4 deliverables",
-      completed: false,
-      priority: 2,
-    },
-    {
-      id: uuidv4(),
-      title: "Resource Allocation",
-      description: "Discuss and allocate team resources for Q4 initiatives",
-      completed: false,
-      priority: 3,
-    },
-    {
-      id: uuidv4(),
-      title: "Success Metrics",
-      description: "Define clear success metrics and KPIs for Q4 goals",
-      completed: false,
-      priority: 3,
     },
   ];
 
@@ -133,10 +104,10 @@ export default function Home() {
     // Check if using default values
     const isDefaultContext =
       context ===
-      "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.";
+      "Demo call for LIA - an AI-powered meeting assistant that provides real-time insights, action items, and objective tracking. Participants: Sales Rep, Technical Lead, and Potential Client. Current state: Client is interested in AI meeting tools and wants to understand LIA's capabilities.";
     const isDefaultObjectives =
       objectives ===
-      "1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics";
+      "1. Demonstrate LIA's real-time transcription and analysis 2. Show live insights and action item generation 3. Explain integration with Slack and Teams 4. Discuss security and compliance features 5. Address pricing and next steps";
 
     if (isDefaultContext && isDefaultObjectives) {
       // Use mock data for default values
@@ -155,12 +126,10 @@ export default function Home() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || "Request failed");
       // Add UUIDs to objectives from API
-      const objectivesWithIds = (data.data.objectives || []).map(
-        (obj: Omit<Objective, "id">) => ({
-          id: uuidv4(),
-          ...obj,
-        }),
-      );
+      const objectivesWithIds = (data.data.objectives || []).map((obj: Omit<Objective, "id">) => ({
+        id: uuidv4(),
+        ...obj,
+      }));
       setParsedObjectives(objectivesWithIds);
       setStep(2);
     } catch (err: unknown) {
@@ -234,56 +203,33 @@ export default function Home() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             {step === 2 && (
-              <button
-                onClick={() => setStep(1)}
-                className="flex items-center justify-center hover:bg-muted rounded-md p-1 transition-all hover:scale-110 active:scale-95"
-              >
+              <button onClick={() => setStep(1)} className="flex items-center justify-center hover:bg-muted rounded-md p-1 transition-all hover:scale-110 active:scale-95">
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
             <div>
               <h1 className="text-2xl font-semibold">Prepare your call</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {step === 1
-                  ? "Share context and objectives. We'll clarify them before starting the call."
-                  : "Review and edit your objectives before starting the call."}
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{step === 1 ? "Share context and objectives. We'll clarify them before starting the call." : "Review and edit your objectives before starting the call."}</p>
             </div>
           </div>
 
           <div className="flex items-center justify-center gap-2">
             <div className="flex items-center gap-2">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300 ${
-                  step === 1
-                    ? "bg-primary text-primary-foreground scale-110"
-                    : "bg-muted text-muted-foreground scale-100"
-                }`}
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300 ${step === 1 ? "bg-primary text-primary-foreground scale-110" : "bg-muted text-muted-foreground scale-100"}`}
               >
                 1
               </div>
-              <span
-                className={`text-sm transition-all duration-300 ${step === 1 ? "font-medium" : "text-muted-foreground"}`}
-              >
-                Input
-              </span>
+              <span className={`text-sm transition-all duration-300 ${step === 1 ? "font-medium" : "text-muted-foreground"}`}>Input</span>
             </div>
             <div className="h-px w-12 bg-border transition-colors duration-300" />
             <div className="flex items-center gap-2">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300 ${
-                  step === 2
-                    ? "bg-primary text-primary-foreground scale-110"
-                    : "bg-muted text-muted-foreground scale-100"
-                }`}
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300 ${step === 2 ? "bg-primary text-primary-foreground scale-110" : "bg-muted text-muted-foreground scale-100"}`}
               >
                 2
               </div>
-              <span
-                className={`text-sm transition-all duration-300 ${step === 2 ? "font-medium" : "text-muted-foreground"}`}
-              >
-                Review
-              </span>
+              <span className={`text-sm transition-all duration-300 ${step === 2 ? "font-medium" : "text-muted-foreground"}`}>Review</span>
             </div>
           </div>
         </div>
@@ -297,37 +243,16 @@ export default function Home() {
               <form className="space-y-4" onSubmit={onSubmit}>
                 <div className="grid gap-2">
                   <Label htmlFor="name">Call title (optional)</Label>
-                  <Input
-                    id="name"
-                    placeholder="Quarterly strategy sync"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
+                  <Input id="name" placeholder="LIA product demo" value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="context">
-                      Any previous conversations for context?
-                    </Label>
-                    <Textarea
-                      id="context"
-                      placeholder="Background, who is involved, current state..."
-                      value={context}
-                      onChange={(e) => setContext(e.target.value)}
-                      rows={12}
-                    />
+                    <Label htmlFor="context">Any previous conversations for context?</Label>
+                    <Textarea id="context" placeholder="Background, who is involved, current state..." value={context} onChange={(e) => setContext(e.target.value)} rows={12} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="objectives">
-                      What's the goal of the call?
-                    </Label>
-                    <Textarea
-                      id="objectives"
-                      placeholder="What you want to achieve in this call..."
-                      value={objectives}
-                      onChange={(e) => setObjectives(e.target.value)}
-                      rows={12}
-                    />
+                    <Label htmlFor="objectives">What's the goal of the call?</Label>
+                    <Textarea id="objectives" placeholder="What you want to achieve in this call..." value={objectives} onChange={(e) => setObjectives(e.target.value)} rows={12} />
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-3">
@@ -337,11 +262,7 @@ export default function Home() {
                 </div>
               </form>
 
-              {error && (
-                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                  {error}
-                </div>
-              )}
+              {error && <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">{error}</div>}
             </div>
           )}
 
@@ -352,10 +273,7 @@ export default function Home() {
                 <div>
                   <div className="space-y-3">
                     {parsedObjectives.map((obj, i) => (
-                      <div
-                        key={obj.id}
-                        className="rounded-md border p-3 transition-all duration-200 hover:shadow-md hover:border-primary/50"
-                      >
+                      <div key={obj.id} className="rounded-md border p-3 transition-all duration-200 hover:shadow-md hover:border-primary/50">
                         {editingId === i ? (
                           <div className="space-y-2">
                             <div>
@@ -404,11 +322,7 @@ export default function Home() {
                               <Button size="sm" onClick={handleSaveEdit}>
                                 Save
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCancelEdit}
-                              >
+                              <Button size="sm" variant="outline" onClick={handleCancelEdit}>
                                 Cancel
                               </Button>
                             </div>
@@ -417,31 +331,15 @@ export default function Home() {
                           <div>
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <div className="font-medium text-sm">
-                                  {obj.title}
-                                </div>
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  {obj.description}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Priority: {obj.priority}
-                                </div>
+                                <div className="font-medium text-sm">{obj.title}</div>
+                                <div className="text-sm text-muted-foreground mt-1">{obj.description}</div>
+                                <div className="text-xs text-muted-foreground mt-1">Priority: {obj.priority}</div>
                               </div>
                               <div className="flex gap-1 ml-2">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleStartEdit(i)}
-                                  className="transition-all hover:scale-110 active:scale-95"
-                                >
+                                <Button size="icon" variant="ghost" onClick={() => handleStartEdit(i)} className="transition-all hover:scale-110 active:scale-95">
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  onClick={() => handleDeleteObjective(i)}
-                                  className="text-destructive hover:text-destructive transition-all hover:scale-110 active:scale-95"
-                                >
+                                <Button size="icon" variant="ghost" onClick={() => handleDeleteObjective(i)} className="text-destructive hover:text-destructive transition-all hover:scale-110 active:scale-95">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -479,11 +377,7 @@ export default function Home() {
                                     priority: 1,
                                   })
                                 }
-                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
-                                  newObjective.priority === 1
-                                    ? "text-green-600"
-                                    : "text-muted-foreground hover:text-green-500"
-                                }`}
+                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${newObjective.priority === 1 ? "text-green-600" : "text-muted-foreground hover:text-green-500"}`}
                               >
                                 Low
                               </button>
@@ -495,11 +389,7 @@ export default function Home() {
                                     priority: 2,
                                   })
                                 }
-                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
-                                  newObjective.priority === 2
-                                    ? "text-yellow-600"
-                                    : "text-muted-foreground hover:text-yellow-500"
-                                }`}
+                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${newObjective.priority === 2 ? "text-yellow-600" : "text-muted-foreground hover:text-yellow-500"}`}
                               >
                                 Medium
                               </button>
@@ -511,11 +401,7 @@ export default function Home() {
                                     priority: 3,
                                   })
                                 }
-                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
-                                  newObjective.priority === 3
-                                    ? "text-red-600"
-                                    : "text-muted-foreground hover:text-red-500"
-                                }`}
+                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${newObjective.priority === 3 ? "text-red-600" : "text-muted-foreground hover:text-red-500"}`}
                               >
                                 High
                               </button>
@@ -561,10 +447,7 @@ export default function Home() {
                     )}
 
                     <div className="flex items-center mt-4 justify-end gap-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsAddingNew(true)}
-                      >
+                      <Button variant="outline" onClick={() => setIsAddingNew(true)}>
                         + Add Objective
                       </Button>
                       <Button
@@ -575,9 +458,7 @@ export default function Home() {
                             objectives,
                             parsedObjectives,
                           });
-                          router.push(
-                            `/call?title=${encodeURIComponent(name || "Call")}`,
-                          );
+                          router.push(`/call?title=${encodeURIComponent(name || "Call")}`);
                         }}
                       >
                         Start call
@@ -587,11 +468,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {error && (
-                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                  {error}
-                </div>
-              )}
+              {error && <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">{error}</div>}
             </div>
           )}
         </div>

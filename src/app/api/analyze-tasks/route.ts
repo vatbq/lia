@@ -99,17 +99,15 @@ ${existingInsightsText}
 ## 1. TASK STATUS ANALYSIS
 For each task in the list above, carefully determine if it has been completed based on the conversation.
 
-**Completion Criteria:**
-- Task is explicitly marked as done, finished, or completed in the conversation
-- The conversation contains clear evidence that the task's objective has been fully achieved
-- Someone explicitly confirms the task is complete or accomplished
+**Completion Criteria (mark as completed if ANY of these apply):**
+- Task is explicitly marked as done, finished, completed, or accomplished
+- Clear evidence that the task's objective has been fully achieved (e.g., "sent the email", "uploaded the file", "called the client")
+- Someone confirms the task is complete using past tense or completion language (e.g., "I did X", "finished X", "X is ready", "X is sent")
+- Someone is showing off, demonstrating, or presenting the completed work (e.g., "look at this", "here's what I made", "check out", "let me show you")
 
-**NOT Completed:**
-- Task is only discussed or mentioned without completion
-- Task is in progress but not finished
-- Task is planned for the future
-- Partial completion (unless explicitly stated as "done")
-- No mention of the task in the conversation
+**NOT Completed (only mark as incomplete if):**
+- No mention of the task at all in the conversation
+- Clear indication that the task failed or wasn't completed
 
 **For each task provide:**
 - \`id\`: The exact task ID from the list above
@@ -117,24 +115,29 @@ For each task in the list above, carefully determine if it has been completed ba
 - \`message\`: If completed, explain what was done and how you know it's complete (2-3 sentences). If not completed, provide an empty string "".
 
 ## 2. ACTION ITEMS EXTRACTION
-Scan the conversation for NEW action items, tasks, or commitments that were discussed but are NOT in the existing task list OR existing action items list.
+Scan the conversation for NEW action items that are SPECIFIC, COMMITTED, and NOT DUPLICATES.
 
-**IMPORTANT:** Review the "EXISTING ACTION ITEMS" section above. DO NOT create action items that are already captured or very similar to what's already listed.
+**CRITICAL - DUPLICATE CHECK (MUST DO FIRST):**
+1. Read through ALL existing action items carefully
+2. For each potential new action item, ask: "Is this already captured or very similar to an existing item?"
+3. If YES to any similarity, DO NOT create the action item
+4. Only create action items that are completely NEW and distinct
 
-**Look for:**
-- Explicit commitments: "I'll...", "We need to...", "Let's...", "I will..."
-- Decisions that require follow-up actions
-- Problems mentioned that need solutions
-- Deadlines or future tasks mentioned
-- Scheduled activities or meetings
-- Things people agreed to do
+**ONLY Extract Action Items That Are:**
+- **Explicitly committed with clear ownership**: Someone specifically said "I will...", "I'll...", "I need to...", "We must..."
+- **Scheduled or time-bound**: Mentions a specific date, time, deadline, or scheduling requirement (e.g., "meeting next Tuesday", "send by Friday", "schedule a call")
+- **Concrete and specific**: Has a clear deliverable or outcome (e.g., "send the report to John", NOT "think about the report")
+- **Future-oriented**: Something that needs to be done after this conversation
 
-**Do NOT extract:**
-- Vague or hypothetical discussions without commitment
-- Tasks that are already in the existing task list
-- Action items that are already in the existing action items list
-- Action items very similar to existing ones (avoid duplicates)
-- General observations without actionable outcomes
+**ABSOLUTELY DO NOT Extract:**
+- Vague statements without commitment (e.g., "we should maybe...", "it would be nice to...")
+- Past tense actions already completed (e.g., "I sent the email")
+- General ideas or discussions without clear next steps
+- Anything already captured in existing tasks or existing action items
+- Similar variations of existing action items (even with slightly different wording)
+- Hypothetical scenarios or possibilities without commitment
+- Questions or uncertainties without decisions
+- General observations, complaints, or comments without actionable outcomes
 
 **For each action item provide:**
 - \`id\`: Generate a unique ID (use format: "action-[timestamp]-[random]")
@@ -152,13 +155,11 @@ Generate ONLY **EXCEPTIONAL** insights that represent MAJOR developments or crit
 **CRITICAL RESTRICTIONS:**
 - Review "EXISTING INSIGHTS" - DO NOT create similar or duplicate insights
 - **DEFAULT TO EMPTY ARRAY** - Most conversations should generate ZERO new insights
-- Only create insights for truly exceptional, high-impact information
+- Only create insights for truly exceptional, high-impact information or if someone mentions that this is an insight.
 
 **When to Generate Insights (VERY RARELY):**
 - MAJOR project milestones completed
-- CRITICAL problems or blockers identified
 - SIGNIFICANT strategic decisions made
-- HIGH-IMPACT risks or warnings discovered
 
 **DO NOT Generate Insights For:**
 - Normal work progress or routine updates
@@ -220,15 +221,27 @@ Return your analysis in the following structure (all arrays, no nested objects):
 # IMPORTANT NOTES
 - Be thorough but accurate - only mark tasks as completed if there's clear evidence
 - Generate IDs that are unique and won't collide (use timestamp + random string)
-- **DO NOT DUPLICATE:** Review existing action items and insights carefully - do not create duplicates or very similar items
-- **INSIGHTS ARE RARE:** Most conversations should generate ZERO insights. Default to empty array unless there's MAJOR new information
-- **Maximum 0-1 insights** per conversation (2 only in exceptional cases with critical information)
 - Use professional, clear language in all messages and descriptions
-- If no NEW action items or insights are found, return empty arrays
 - All existing tasks MUST be included in the response with their status
 - **ONLY RETURN NEW CONTENT:** The actionItems and insights arrays should ONLY contain newly identified items that are NOT already in the existing lists. Do not include any existing action items or insights in your response.
 
-# IT IS VERY IMPORTANT YOU DO NOT GENERATE SIMILAR ACTION ITEMS OR INSIGHTS TO THE EXISTING ONES. ONLY NEW CONTENT THATS NOT REPEATED FROM THE EXISTING ONES. !!!!!!
+# CRITICAL DUPLICATE PREVENTION RULES
+- **BEFORE creating ANY action item:** Check if it already exists or is similar to existing ones
+- **If in doubt, DO NOT create it** - better to miss an action item than create a duplicate
+- **Action items should be RARE** - most conversations should generate 0-2 action items maximum
+- **Only create action items with explicit commitment + specificity + scheduling/deadlines**
+- **INSIGHTS ARE EXTREMELY RARE:** Most conversations should generate ZERO insights. Default to empty array unless there's MAJOR new information
+- **Maximum 0-1 insights** per conversation (2 only in exceptional cases with critical information)
+
+# DUPLICATE CHECK PROCEDURE FOR ACTION ITEMS:
+1. Read the potential action item you want to create
+2. Read through EVERY existing action item
+3. Ask yourself: "Does any existing item cover this same goal, task, or commitment?"
+4. If YES - DO NOT CREATE IT
+5. If MAYBE - DO NOT CREATE IT (err on the side of not duplicating)
+6. If NO and it meets all criteria (committed + specific + scheduled) - CREATE IT
+
+# YOU WILL BE PENALIZED FOR CREATING DUPLICATE ACTION ITEMS OR INSIGHTS. ALWAYS DEFAULT TO EMPTY ARRAYS IF UNCERTAIN.
 `;
 
     const { object } = await generateObject({
