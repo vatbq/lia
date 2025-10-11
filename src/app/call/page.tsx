@@ -560,7 +560,7 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
             </div>
           )}
           {/* Task Analysis Section */}
-          <Card className="p-6 mb-6">
+          {/* <Card className="p-6 mb-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Brain className="w-5 h-5" />
               Task Analysis
@@ -578,7 +578,7 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                 <span className="text-xs text-muted-foreground">Uses incomplete objectives ({objectives.filter((obj) => !obj.completed).length} tasks)</span>
               </div>
             </div>
-          </Card>
+          </Card> */}
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Insights Section */}
