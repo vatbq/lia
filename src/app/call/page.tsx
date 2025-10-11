@@ -319,14 +319,14 @@ export default function CallPage({
       // Update objectives directly from API response
       setObjectives((prev) => {
         return prev.map((obj) => {
-          const taskAnalysis = result.tasks[obj.id];
+          const taskAnalysis = result.tasks.find((t: any) => t.id === obj.id);
           if (taskAnalysis) {
             // Only update if task is not already completed
             // Once completed, tasks stay completed
             if (obj.completed && !taskAnalysis.completed) {
               return obj; // Keep existing completed state
             }
-            
+
             return {
               ...obj,
               completed: taskAnalysis.completed,
@@ -340,9 +340,9 @@ export default function CallPage({
       // Update completed objective IDs - only add new completions, never remove
       setCompletedObjectiveIds((prev) => {
         const newSet = new Set(prev);
-        Object.entries(result.tasks).forEach(([id, analysis]) => {
-          if ((analysis as { completed: boolean }).completed) {
-            newSet.add(id);
+        result.tasks.forEach((task: any) => {
+          if (task.completed) {
+            newSet.add(task.id);
           }
           // Don't remove from completed set - once completed, stay completed
         });

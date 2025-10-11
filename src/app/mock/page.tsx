@@ -94,19 +94,19 @@ export default function MockPage() {
       setConnected(false);
     });
 
-    newSocket.on("task_analysis_updated", (data: { tasks: Record<string, { completed: boolean; message: string }>; timestamp: string }) => {
+    newSocket.on("task_analysis_updated", (data: { tasks: Array<{ id: string; completed: boolean; message?: string }>; timestamp: string }) => {
       console.log("🎯 Task analysis updated event received on mock page:", data);
 
       setObjectives((prev) => {
         return prev.map((obj) => {
-          const taskAnalysis = data.tasks[obj.id];
+          const taskAnalysis = data.tasks.find(t => t.id === obj.id);
           if (taskAnalysis) {
             // Only update if task is not already completed
             // Once completed, tasks stay completed
             if (obj.completed && !taskAnalysis.completed) {
               return obj; // Keep existing completed state
             }
-            
+
             return {
               ...obj,
               completed: taskAnalysis.completed,
@@ -121,9 +121,9 @@ export default function MockPage() {
       // Update completed objective IDs - only add new completions, never remove
       setCompletedIds((prev) => {
         const newSet = new Set(prev);
-        Object.entries(data.tasks).forEach(([id, analysis]) => {
-          if (analysis.completed) {
-            newSet.add(id);
+        data.tasks.forEach((task) => {
+          if (task.completed) {
+            newSet.add(task.id);
           }
           // Don't remove from completed set - once completed, stay completed
         });
