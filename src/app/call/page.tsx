@@ -1,10 +1,12 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
-import { CheckCircle2, Circle, Lightbulb, AlertTriangle, CheckCircle, Clock, Info } from "lucide-react";
+import { CheckCircle2, Circle, Lightbulb, AlertTriangle, CheckCircle, Clock, Info, PhoneOff } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
-import { getLatestCall } from "@/lib/storage";
+import { getLatestCall, updateCall } from "@/lib/storage";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 interface Objective {
   id: string;
@@ -37,15 +39,21 @@ export default function CallPage({
   searchParams: Promise<{ title?: string }>;
 }) {
   const params = use(searchParams);
+  const router = useRouter();
   const title = params?.title || "Call";
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [currentCall, setCurrentCall] = useState<any>(null);
+  const [isEndingCall, setIsEndingCall] = useState(false);
+  const [completedObjectiveIds, setCompletedObjectiveIds] = useState<Set<string>>(new Set());
 
   // Load objectives from localStorage on mount
   useEffect(() => {
     const latestCall = getLatestCall();
+    setCurrentCall(latestCall);
+    
     if (latestCall?.parsedObjectives && latestCall.parsedObjectives.length > 0) {
       const objectivesWithCompletion = latestCall.parsedObjectives.map((obj) => ({
         ...obj,
@@ -101,6 +109,7 @@ export default function CallPage({
           obj.id === data.id ? { ...obj, completed: true } : obj
         )
       );
+      setCompletedObjectiveIds((prev) => new Set(prev).add(data.id));
     });
 
     newSocket.on("new_insight", (data: any) => {
@@ -159,6 +168,48 @@ export default function CallPage({
     }
   };
 
+  const endCall = async () => {
+    if (!currentCall) {
+      console.error('No current call found');
+      return;
+    }
+
+    setIsEndingCall(true);
+
+    try {
+      // Convert Date objects to ISO strings for storage
+      const insightsForStorage = insights.map(insight => ({
+        ...insight,
+        timestamp: insight.timestamp.toISOString()
+      }));
+
+      const actionItemsForStorage = actionItems.map(item => ({
+        ...item,
+        timestamp: item.timestamp.toISOString()
+      }));
+
+      // Update the call with insights, action items, and completed objectives
+      const updatedCall = updateCall(currentCall.id, {
+        insights: insightsForStorage,
+        actionItems: actionItemsForStorage,
+        completedObjectives: Array.from(completedObjectiveIds),
+        endedAt: new Date().toISOString()
+      });
+
+      if (updatedCall) {
+        console.log('Call ended successfully:', updatedCall);
+        // Navigate to the call detail page
+        router.push(`/call/${currentCall.id}`);
+      } else {
+        console.error('Failed to update call');
+      }
+    } catch (error) {
+      console.error('Error ending call:', error);
+    } finally {
+      setIsEndingCall(false);
+    }
+  };
+
   const getInsightIcon = (type: Insight['type']) => {
     switch (type) {
       case 'positive':
@@ -202,10 +253,22 @@ export default function CallPage({
       <div className="flex-1 px-6 py-10 sm:px-8">
         <div className="mx-auto max-w-4xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">{title}</h1>
-            <p className="mt-2 text-lg text-muted-foreground">
-              Live insights and action items from your call
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold">{title}</h1>
+                <p className="mt-2 text-lg text-muted-foreground">
+                  Live insights and action items from your call
+                </p>
+              </div>
+              <Button
+                onClick={endCall}
+                disabled={isEndingCall || !currentCall}
+                className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                <PhoneOff className="w-4 h-4" />
+                {isEndingCall ? "Ending Call..." : "End Call"}
+              </Button>
+            </div>
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 <strong>Debug:</strong> Socket connected: {socket ? `Yes (${socket.id})` : 'No'} | 
