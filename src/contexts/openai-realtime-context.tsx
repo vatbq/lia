@@ -1,27 +1,14 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useState,
-  useRef,
-  ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useState, useRef, ReactNode } from "react";
 
 interface OpenAIRealtimeContextType {
   connection: WebSocket | null;
   connectToOpenAI: (config: SessionConfig) => void;
   disconnect: () => void;
   connectionState: ConnectionState;
-  addListener: (
-    event: RealtimeEvent,
-    callback: (data: unknown) => void,
-  ) => void;
-  removeListener: (
-    event: RealtimeEvent,
-    callback: (data: unknown) => void,
-  ) => void;
+  addListener: (event: RealtimeEvent, callback: (data: unknown) => void) => void;
+  removeListener: (event: RealtimeEvent, callback: (data: unknown) => void) => void;
   send: (data: ArrayBuffer | Blob) => void;
   commitAudioBuffer: () => void;
 }
@@ -70,44 +57,30 @@ interface TranscriptionData {
   transcript: string;
 }
 
-const OpenAIRealtimeContext = createContext<
-  OpenAIRealtimeContextType | undefined
->(undefined);
+const OpenAIRealtimeContext = createContext<OpenAIRealtimeContextType | undefined>(undefined);
 
 interface OpenAIRealtimeProviderProps {
   children: ReactNode;
 }
 
-const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
-  children,
-}) => {
-  const [connectionState, setConnectionState] = useState<ConnectionState>(
-    ConnectionState.CLOSED,
-  );
+const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({ children }) => {
+  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.CLOSED);
   const [connection, setConnection] = useState<WebSocket | null>(null);
-  const eventListeners = useRef<
-    Map<RealtimeEvent, Set<(data: unknown) => void>>
-  >(new Map());
+  const eventListeners = useRef<Map<RealtimeEvent, Set<(data: unknown) => void>>>(new Map());
 
-  const addListener = useCallback(
-    (event: RealtimeEvent, callback: (data: unknown) => void) => {
-      console.log("[OpenAI] Adding listener for event:", event);
-      if (!eventListeners.current.has(event)) {
-        eventListeners.current.set(event, new Set());
-      }
-      eventListeners.current.get(event)?.add(callback);
-      console.log("[OpenAI] Total listeners for", event, ":", eventListeners.current.get(event)?.size);
-    },
-    [],
-  );
+  const addListener = useCallback((event: RealtimeEvent, callback: (data: unknown) => void) => {
+    console.log("[OpenAI] Adding listener for event:", event);
+    if (!eventListeners.current.has(event)) {
+      eventListeners.current.set(event, new Set());
+    }
+    eventListeners.current.get(event)?.add(callback);
+    console.log("[OpenAI] Total listeners for", event, ":", eventListeners.current.get(event)?.size);
+  }, []);
 
-  const removeListener = useCallback(
-    (event: RealtimeEvent, callback: (data: unknown) => void) => {
-      console.log("[OpenAI] Removing listener for event:", event);
-      eventListeners.current.get(event)?.delete(callback);
-    },
-    [],
-  );
+  const removeListener = useCallback((event: RealtimeEvent, callback: (data: unknown) => void) => {
+    console.log("[OpenAI] Removing listener for event:", event);
+    eventListeners.current.get(event)?.delete(callback);
+  }, []);
 
   const emit = useCallback((event: RealtimeEvent, data: unknown) => {
     const listenerCount = eventListeners.current.get(event)?.size || 0;
@@ -123,9 +96,7 @@ const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
         if (data instanceof Blob) {
           console.log("[OpenAI] Sending audio data (Blob):", data.size, "bytes");
           data.arrayBuffer().then((buffer) => {
-            const base64Audio = btoa(
-              String.fromCharCode(...new Uint8Array(buffer)),
-            );
+            const base64Audio = btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
             const message = {
               type: "input_audio_buffer.append",
@@ -139,9 +110,7 @@ const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
           });
         } else {
           console.log("[OpenAI] Sending audio data (ArrayBuffer):", data.byteLength, "bytes");
-          const base64Audio = btoa(
-            String.fromCharCode(...new Uint8Array(data)),
-          );
+          const base64Audio = btoa(String.fromCharCode(...new Uint8Array(data)));
 
           const message = {
             type: "input_audio_buffer.append",
@@ -157,7 +126,7 @@ const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
         console.warn("[OpenAI] Cannot send audio: connection not open. State:", connection?.readyState);
       }
     },
-    [connection],
+    [connection]
   );
 
   const connectToOpenAI = useCallback(
@@ -175,10 +144,7 @@ const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
         const model = "gpt-4o-mini-transcribe";
         const wsUrl = `wss://api.openai.com/v1/realtime?intent=transcription`;
         console.log("[OpenAI] Creating WebSocket connection to:", wsUrl);
-        const ws = new WebSocket(
-          wsUrl,
-          ["realtime", `openai-insecure-api-key.${token}`],
-        );
+        const ws = new WebSocket(wsUrl, ["realtime", `openai-insecure-api-key.${token}`]);
 
         ws.onopen = () => {
           console.log("[OpenAI] WebSocket connection opened");
@@ -186,6 +152,7 @@ const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
 
           const sessionUpdate: Record<string, unknown> = {
             type: "session.update",
+
             session: {
               type: "transcription",
               audio: {
@@ -196,6 +163,7 @@ const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
                   },
                   transcription: {
                     model: "gpt-4o-mini-transcribe",
+                    language: "en",
                   },
                   turn_detection: {
                     type: "server_vad",
@@ -266,7 +234,7 @@ const OpenAIRealtimeProvider: React.FC<OpenAIRealtimeProviderProps> = ({
         setConnectionState(ConnectionState.ERROR);
       }
     },
-    [emit],
+    [emit]
   );
 
   const commitAudioBuffer = useCallback(() => {
@@ -316,9 +284,7 @@ function useOpenAIRealtime(): OpenAIRealtimeContextType {
   const context = useContext(OpenAIRealtimeContext);
 
   if (context === undefined) {
-    throw new Error(
-      "useOpenAIRealtime must be used within an OpenAIRealtimeProvider",
-    );
+    throw new Error("useOpenAIRealtime must be used within an OpenAIRealtimeProvider");
   }
 
   return context;
