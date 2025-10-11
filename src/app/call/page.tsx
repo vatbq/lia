@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { CheckCircle2, Circle, Lightbulb, AlertTriangle, CheckCircle, Clock, Info } from "lucide-react";
 import { io, Socket } from "socket.io-client";
+import { v4 as uuidv4 } from "uuid";
 import { getLatestCall } from "@/lib/storage";
 
 interface Objective {
@@ -46,33 +47,30 @@ export default function CallPage({
   useEffect(() => {
     const latestCall = getLatestCall();
     if (latestCall?.parsedObjectives && latestCall.parsedObjectives.length > 0) {
-      const objectivesWithIds = latestCall.parsedObjectives.map((obj, idx) => ({
-        id: `obj-${idx}`,
-        name: obj.name,
-        description: obj.description,
-        priority: obj.priority,
+      const objectivesWithCompletion = latestCall.parsedObjectives.map((obj) => ({
+        ...obj,
         completed: false,
       }));
-      setObjectives(objectivesWithIds);
+      setObjectives(objectivesWithCompletion);
     } else {
       // Fallback to default objectives if none are found
       setObjectives([
         {
-          id: "obj-0",
+          id: uuidv4(),
           name: "Introduce yourself",
           description: "Start the call with a friendly introduction",
           priority: 1,
           completed: false,
         },
         {
-          id: "obj-1",
+          id: uuidv4(),
           name: "Discuss project timeline",
           description: "Review key milestones and deadlines",
           priority: 2,
           completed: false,
         },
         {
-          id: "obj-2",
+          id: uuidv4(),
           name: "Address budget concerns",
           description: "Go over financial constraints and requirements",
           priority: 3,

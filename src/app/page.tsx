@@ -3,6 +3,7 @@ import * as React from "react";
 import { useState } from "react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { saveCall } from "@/lib/storage";
 
 type Objective = {
+  id: string;
   name: string;
   description: string;
   priority: number;
@@ -35,11 +37,11 @@ export default function Home() {
 
   // For editing objectives
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Objective>({ name: "", description: "", priority: 1 });
+  const [editForm, setEditForm] = useState<Objective>({ id: "", name: "", description: "", priority: 1 });
 
   // For adding new objectives
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newObjective, setNewObjective] = useState<Objective>({ name: "", description: "", priority: 1 });
+  const [newObjective, setNewObjective] = useState<Objective>({ id: "", name: "", description: "", priority: 1 });
 
   // Helper to clamp priority between 1 and 5
   function clampPriority(value: string | number): number {
@@ -51,35 +53,41 @@ export default function Home() {
   // Mock objectives for default values
   const mockObjectives: Objective[] = [
     {
+      id: uuidv4(),
       name: "Review Q3 Progress",
       description: "Assess current progress against Q3 goals and identify gaps",
-      priority: 1
+      priority: 1,
     },
     {
+      id: uuidv4(),
       name: "Identify Q4 Features",
       description: "Select top 3 features to prioritize for Q4 development",
-      priority: 1
+      priority: 1,
     },
     {
+      id: uuidv4(),
       name: "Assign Ownership",
       description: "Assign clear ownership and responsibilities for each Q4 feature",
-      priority: 2
+      priority: 2,
     },
     {
+      id: uuidv4(),
       name: "Set Timelines",
       description: "Establish realistic timelines and milestones for Q4 deliverables",
-      priority: 2
+      priority: 2,
     },
     {
+      id: uuidv4(),
       name: "Resource Allocation",
       description: "Discuss and allocate team resources for Q4 initiatives",
-      priority: 3
+      priority: 3,
     },
     {
+      id: uuidv4(),
       name: "Success Metrics",
       description: "Define clear success metrics and KPIs for Q4 goals",
-      priority: 3
-    }
+      priority: 3,
+    },
   ];
 
   async function onSubmit(e: React.FormEvent) {
@@ -93,9 +101,10 @@ export default function Home() {
     }
 
     // Check if using default values
-    const isDefaultContext = context === "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.";
+    const isDefaultContext =
+      context === "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.";
     const isDefaultObjectives = objectives === "1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics";
-    
+
     if (isDefaultContext && isDefaultObjectives) {
       // Use mock data for default values
       setParsedObjectives(mockObjectives);
@@ -111,7 +120,12 @@ export default function Home() {
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || "Request failed");
-      setParsedObjectives(data.data.objectives || []);
+      // Add UUIDs to objectives from API
+      const objectivesWithIds = (data.data.objectives || []).map((obj: Omit<Objective, "id">) => ({
+        id: uuidv4(),
+        ...obj,
+      }));
+      setParsedObjectives(objectivesWithIds);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -124,9 +138,13 @@ export default function Home() {
       setError("Name and description are required");
       return;
     }
-    const clampedObjective = { ...newObjective, priority: clampPriority(newObjective.priority) };
+    const clampedObjective = {
+      ...newObjective,
+      id: uuidv4(),
+      priority: clampPriority(newObjective.priority),
+    };
     setParsedObjectives([...parsedObjectives, clampedObjective]);
-    setNewObjective({ name: "", description: "", priority: 1 });
+    setNewObjective({ id: "", name: "", description: "", priority: 1 });
     setIsAddingNew(false);
     setError(null);
   }
@@ -151,7 +169,7 @@ export default function Home() {
 
   function handleCancelEdit() {
     setEditingId(null);
-    setEditForm({ name: "", description: "", priority: 1 });
+    setEditForm({ id: "", name: "", description: "", priority: 1 });
   }
 
   function handleDeleteObjective(index: number) {
@@ -164,7 +182,7 @@ export default function Home() {
         <div className="mb-8 text-center">
           <div className="flex items-center justify-between mb-4">
             <div></div>
-            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>
               View Dashboard
             </Button>
           </div>
@@ -225,7 +243,7 @@ export default function Home() {
                       variant="outline"
                       onClick={() => {
                         setIsAddingNew(false);
-                        setNewObjective({ name: "", description: "", priority: 1 });
+                        setNewObjective({ id: "", name: "", description: "", priority: 1 });
                       }}
                     >
                       Cancel
@@ -316,7 +334,7 @@ export default function Home() {
                             variant="outline"
                             onClick={() => {
                               setIsAddingNew(false);
-                              setNewObjective({ name: "", description: "", priority: 1 });
+                              setNewObjective({ id: "", name: "", description: "", priority: 1 });
                             }}
                           >
                             Cancel
@@ -326,7 +344,6 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-
               </div>
             )}
           </CardContent>
@@ -336,16 +353,20 @@ export default function Home() {
                 Manually add objectives
               </Button>
             )}
-            <Button variant="secondary" disabled={parsedObjectives.length === 0} onClick={() => {
-              // Save call data before starting
-              saveCall({
-                name: name || "Call",
-                context,
-                objectives,
-                parsedObjectives,
-              });
-              router.push(`/call?title=${encodeURIComponent(name || "Call")}`);
-            }}>
+            <Button
+              variant="secondary"
+              disabled={parsedObjectives.length === 0}
+              onClick={() => {
+                // Save call data before starting
+                saveCall({
+                  name: name || "Call",
+                  context,
+                  objectives,
+                  parsedObjectives,
+                });
+                router.push(`/call?title=${encodeURIComponent(name || "Call")}`);
+              }}
+            >
               Start call
             </Button>
           </CardFooter>

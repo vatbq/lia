@@ -4,6 +4,7 @@ export interface CallData {
   context: string;
   objectives: string;
   parsedObjectives: Array<{
+    id: string;
     name: string;
     description: string;
     priority: number;

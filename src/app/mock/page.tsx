@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
+import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, Send, AlertCircle, Lightbulb, CheckCircle } from "lucide-react";
@@ -41,30 +42,24 @@ export default function MockPage() {
   useEffect(() => {
     const latestCall = getLatestCall();
     if (latestCall?.parsedObjectives && latestCall.parsedObjectives.length > 0) {
-      const objectivesWithIds = latestCall.parsedObjectives.map((obj, idx) => ({
-        id: `obj-${idx}`,
-        name: obj.name,
-        description: obj.description,
-        priority: obj.priority,
-      }));
-      setObjectives(objectivesWithIds);
+      setObjectives(latestCall.parsedObjectives);
     } else {
       // Fallback to default objectives
       setObjectives([
         {
-          id: "obj-0",
+          id: uuidv4(),
           name: "Introduce yourself",
           description: "Start the call with a friendly introduction",
           priority: 1,
         },
         {
-          id: "obj-1",
+          id: uuidv4(),
           name: "Discuss project timeline",
           description: "Review key milestones and deadlines",
           priority: 2,
         },
         {
-          id: "obj-2",
+          id: uuidv4(),
           name: "Address budget concerns",
           description: "Go over financial constraints and requirements",
           priority: 3,
