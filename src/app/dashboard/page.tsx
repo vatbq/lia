@@ -48,16 +48,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen w-full px-6 py-10 sm:px-8">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight">Call Dashboard</h1>
-            <p className="mt-2 text-lg text-muted-foreground">Your call history and preparation details</p>
-          </div>
-          <Button onClick={() => router.push('/')}>
-            New Call
-          </Button>
-        </div>
-
         {calls.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">

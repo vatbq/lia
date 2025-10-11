@@ -8,14 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { saveCall } from "@/lib/storage";
 
 type Objective = {
@@ -209,28 +201,15 @@ export default function Home() {
   return (
     <div className="min-h-screen w-full px-6 py-10 sm:px-8">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-between mb-4">
-            <div></div>
-            <Button variant="outline" onClick={() => router.push("/dashboard")}>
-              View Dashboard
-            </Button>
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight">LIA</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Listen, Insight, Act
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">Pre setup call</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Prepare your call</CardTitle>
-            <CardDescription>
+        <div>
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold">Prepare your call</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Share context and objectives. We'll clarify them before starting
               the call.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div>
             <form className="space-y-4" onSubmit={onSubmit}>
               <div className="grid gap-2">
                 <Label htmlFor="name">Call title (optional)</Label>
@@ -482,8 +461,8 @@ export default function Home() {
                 </div>
               </div>
             )}
-          </CardContent>
-          <CardFooter className="flex gap-2">
+          </div>
+          <div className="flex gap-2 mt-6">
             {parsedObjectives.length === 0 && (
               <Button variant="outline" onClick={() => setIsAddingNew(true)}>
                 Manually add objectives
@@ -507,8 +486,8 @@ export default function Home() {
             >
               Start call
             </Button>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

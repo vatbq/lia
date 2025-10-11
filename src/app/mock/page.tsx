@@ -310,13 +310,6 @@ export default function MockPage() {
   return (
     <div className="min-h-screen w-full px-6 py-10 sm:px-8 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Mock Testing Page</h1>
-          <p className="text-muted-foreground">
-            Trigger objective completions to test the call page in real-time
-          </p>
-        </div>
-
         {/* Connection status */}
         <Card className="p-4 mb-6">
           <div className="flex items-center gap-3">
@@ -369,7 +362,7 @@ export default function MockPage() {
           </Card>
         ) : (
           /* Objective triggers */
-          <Card className="p-6">
+          (<Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Trigger Completions</h2>
             <div className="space-y-3">
               {objectives.map((objective) => {
@@ -448,7 +441,6 @@ export default function MockPage() {
                 );
               })}
             </div>
-
             <div className="mt-6 pt-6 border-t">
               <Button
                 onClick={resetAll}
@@ -459,7 +451,7 @@ export default function MockPage() {
                 Reset All (Local Only)
               </Button>
             </div>
-          </Card>
+          </Card>)
         )}
 
         {/* Insights Triggers */}
