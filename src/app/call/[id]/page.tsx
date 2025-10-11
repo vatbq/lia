@@ -180,12 +180,11 @@ export default function CallDetailPage() {
                   {call.parsedObjectives
                     .sort((a, b) => a.priority - b.priority)
                     .map((obj, index) => {
-                      const objectiveId = `obj-${index}`;
-                      const isCompleted = call.completedObjectives?.includes(objectiveId) || false;
+                      const isCompleted = call.completedObjectives?.includes(obj.id) || false;
                       
                       return (
-                        <div 
-                          key={index} 
+                        <div
+                          key={obj.id} 
                           className={`p-4 rounded-lg border transition-all duration-300 ${
                             isCompleted 
                               ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-90" 

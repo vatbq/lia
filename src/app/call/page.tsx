@@ -14,6 +14,8 @@ interface Objective {
   description: string;
   priority: number;
   completed: boolean;
+  status?: 'pending' | 'in_progress' | 'completed';
+  statusMessage?: string;
 }
 
 interface Insight {
@@ -102,14 +104,31 @@ export default function CallPage({
       console.log("Test event received on call page:", data);
     });
 
-    newSocket.on("objective_complete", (data: { id: string }) => {
-      console.log("Objective completed:", data);
-      setObjectives((prev) =>
-        prev.map((obj) =>
-          obj.id === data.id ? { ...obj, completed: true } : obj
-        )
-      );
-      setCompletedObjectiveIds((prev) => new Set(prev).add(data.id));
+    newSocket.on("objective_updated", (data: { id: string; status: 'pending' | 'in_progress' | 'completed'; message: string }) => {
+      console.log("🎯 Objective updated event received:", data);
+
+      setObjectives((prev) => {
+        const foundObjective = prev.find(obj => obj.id === data.id);
+        if (!foundObjective) {
+          console.warn("⚠️ Objective ID not found in current objectives:", data.id);
+          console.log("Available objective IDs:", prev.map(obj => obj.id));
+        } else {
+          console.log("✅ Found objective:", foundObjective.name);
+        }
+
+        return prev.map((obj) =>
+          obj.id === data.id ? {
+            ...obj,
+            completed: data.status === 'completed',
+            status: data.status,
+            statusMessage: data.message
+          } : obj
+        );
+      });
+
+      if (data.status === 'completed') {
+        setCompletedObjectiveIds((prev) => new Set(prev).add(data.id));
+      }
     });
 
     newSocket.on("new_insight", (data: any) => {
@@ -269,31 +288,6 @@ export default function CallPage({
                 {isEndingCall ? "Ending Call..." : "End Call"}
               </Button>
             </div>
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Debug:</strong> Socket connected: {socket ? `Yes (${socket.id})` : 'No'} | 
-                Insights: {insights.length} | Action Items: {actionItems.length}
-              </p>
-              <button
-                onClick={() => {
-                  if (socket) {
-                    const testInsight = {
-                      id: `test-${Date.now()}`,
-                      title: "Test Insight",
-                      description: "This is a test insight from the call page",
-                      type: "positive",
-                      timestamp: new Date().toISOString()
-                    };
-                    console.log("Emitting test insight:", testInsight);
-                    socket.emit("trigger_insight", testInsight);
-                  }
-                }}
-                className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                disabled={!socket}
-              >
-                Test Insight (Self)
-              </button>
-            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -422,7 +416,7 @@ export default function CallPage({
       </div>
 
       {/* Objectives sidebar */}
-      <div className="w-80 border-l bg-muted/20 p-6 overflow-y-auto">
+      <div className="w-96 border-l bg-muted/20 p-6 overflow-y-auto">
         <div>
           <h2 className="text-lg font-semibold mb-4">Objectives</h2>
           <div className="space-y-3">
@@ -467,6 +461,17 @@ export default function CallPage({
                     <p className="text-xs text-muted-foreground mt-1">
                       {objective.description}
                     </p>
+                    {objective.statusMessage && (
+                      <div className={`mt-2 p-2 rounded-md text-xs ${
+                        objective.status === 'completed'
+                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                          : objective.status === 'in_progress'
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+                      }`}>
+                        {objective.statusMessage}
+                      </div>
+                    )}
                     <span
                       className={`
                         inline-block mt-2 text-xs px-2 py-0.5 rounded-full

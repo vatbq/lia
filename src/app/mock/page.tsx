@@ -37,6 +37,8 @@ export default function MockPage() {
   const [connected, setConnected] = useState(false);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<{ [key: string]: 'pending' | 'in_progress' | 'completed' }>({});
+  const [statusMessages, setStatusMessages] = useState<{ [key: string]: string }>({});
 
   // Load objectives from localStorage on mount
   useEffect(() => {
@@ -88,11 +90,28 @@ export default function MockPage() {
     };
   }, []);
 
-  const completeObjective = (id: string) => {
+  const updateObjective = (id: string) => {
+    console.log("🔘 updateObjective called with id:", id);
+    console.log("   Socket exists:", !!socket);
+    console.log("   Socket connected:", socket?.connected);
+
     if (socket) {
-      console.log("Emitting complete_objective for id:", id);
-      socket.emit("complete_objective", { id });
-      setCompletedIds((prev) => new Set(prev).add(id));
+      const status = selectedStatus[id] || 'completed';
+      const message = statusMessages[id] || 'Objective has been completed';
+
+      console.log("📤 Emitting update_objective");
+      console.log("   ID:", id);
+      console.log("   Status:", status);
+      console.log("   Message:", message);
+
+      socket.emit("update_objective", { id, status, message });
+      console.log("✅ Emit completed");
+
+      if (status === 'completed') {
+        setCompletedIds((prev) => new Set(prev).add(id));
+      }
+    } else {
+      console.error("❌ Socket not available!");
     }
   };
 
@@ -253,9 +272,9 @@ export default function MockPage() {
                 return (
                   <div
                     key={objective.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-background"
+                    className="p-4 rounded-lg border bg-background space-y-3"
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
                       {isCompleted && (
                         <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                       )}
@@ -285,14 +304,41 @@ export default function MockPage() {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      onClick={() => completeObjective(objective.id)}
-                      disabled={!connected || isCompleted}
-                      className="gap-2 ml-3"
-                    >
-                      <Send className="w-4 h-4" />
-                      Complete
-                    </Button>
+
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Status</label>
+                        <select
+                          value={selectedStatus[objective.id] || 'completed'}
+                          onChange={(e) => setSelectedStatus({ ...selectedStatus, [objective.id]: e.target.value as 'pending' | 'in_progress' | 'completed' })}
+                          className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Message</label>
+                        <input
+                          type="text"
+                          value={statusMessages[objective.id] || ''}
+                          onChange={(e) => setStatusMessages({ ...statusMessages, [objective.id]: e.target.value })}
+                          placeholder="e.g., You mentioned the project timeline clearly"
+                          className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+                        />
+                      </div>
+
+                      <Button
+                        onClick={() => updateObjective(objective.id)}
+                        disabled={!connected}
+                        className="gap-2 w-full"
+                      >
+                        <Send className="w-4 h-4" />
+                        Update Objective
+                      </Button>
+                    </div>
                   </div>
                 );
               })}

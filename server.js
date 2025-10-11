@@ -39,11 +39,13 @@ app.prepare().then(() => {
       io.emit("test_event", data);
     });
 
-    // Listen for objective completion triggers from mock page
-    socket.on("complete_objective", (data) => {
-      console.log("Objective completed:", data);
-      // Broadcast to all clients
-      io.emit("objective_complete", data);
+    // Listen for objective status updates from mock page
+    socket.on("update_objective", (data) => {
+      console.log("📥 Received update_objective from client:", socket.id);
+      console.log("   Data:", JSON.stringify(data, null, 2));
+      // Broadcast to all clients with id, status, and message
+      io.emit("objective_updated", data);
+      console.log("📤 Broadcasted objective_updated to all clients");
     });
 
     // Listen for insight triggers from mock page
