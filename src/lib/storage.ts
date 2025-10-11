@@ -1,0 +1,58 @@
+export interface CallData {
+  id: string;
+  name: string;
+  context: string;
+  objectives: string;
+  parsedObjectives: Array<{
+    name: string;
+    description: string;
+    priority: number;
+  }>;
+  constraints: string[];
+  risks: string[];
+  createdAt: string;
+}
+
+const STORAGE_KEY = 'lia-calls';
+
+export function saveCall(callData: Omit<CallData, 'id' | 'createdAt'>): CallData {
+  const id = `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const createdAt = new Date().toISOString();
+  
+  const fullCallData: CallData = {
+    ...callData,
+    id,
+    createdAt,
+  };
+
+  const existingCalls = getCalls();
+  const updatedCalls = [fullCallData, ...existingCalls];
+  
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCalls));
+  
+  return fullCallData;
+}
+
+export function getCalls(): CallData[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+  
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading calls from localStorage:', error);
+    return [];
+  }
+}
+
+export function deleteCall(id: string): void {
+  const calls = getCalls();
+  const updatedCalls = calls.filter(call => call.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCalls));
+}
+
+export function clearAllCalls(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}

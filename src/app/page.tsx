@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { saveCall } from "@/lib/storage";
 
 type Objective = {
   name: string;
@@ -120,6 +121,12 @@ export default function Home() {
     <div className="min-h-screen w-full px-6 py-10 sm:px-8">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 text-center">
+          <div className="flex items-center justify-between mb-4">
+            <div></div>
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              View Dashboard
+            </Button>
+          </div>
           <h1 className="text-4xl font-bold tracking-tight">LIA</h1>
           <p className="mt-2 text-lg text-muted-foreground">Listen, Insight, Act</p>
           <p className="mt-1 text-sm text-muted-foreground">Pre setup call</p>
@@ -308,7 +315,18 @@ export default function Home() {
                 Manually add objectives
               </Button>
             )}
-            <Button variant="secondary" disabled={parsedObjectives.length === 0} onClick={() => router.push(`/call?title=${encodeURIComponent(name || "Call")}`)}>
+            <Button variant="secondary" disabled={parsedObjectives.length === 0} onClick={() => {
+              // Save call data before starting
+              saveCall({
+                name: name || "Call",
+                context,
+                objectives,
+                parsedObjectives,
+                constraints,
+                risks,
+              });
+              router.push(`/call?title=${encodeURIComponent(name || "Call")}`);
+            }}>
               Start call
             </Button>
           </CardFooter>
