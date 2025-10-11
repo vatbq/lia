@@ -109,108 +109,81 @@ export default function CallDetailPage() {
   }
 
   return (
-    <div className="min-h-screen w-full px-6 py-10 sm:px-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <Button 
-              variant="outline" 
-              onClick={() => router.push('/dashboard')}
-              className="mb-4"
-            >
-              ← Back to Dashboard
-            </Button>
-            <h1 className="text-4xl font-bold tracking-tight">{call.name}</h1>
-            <p className="mt-2 text-lg text-muted-foreground">
-              Created on {formatDate(call.createdAt)}
+    <div className="min-h-screen w-full bg-gradient-to-b from-background to-muted/20">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">{call.name}</h1>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                <span>Created {formatDate(call.createdAt)}</span>
+              </div>
               {call.endedAt && (
-                <span className="ml-2 text-sm text-muted-foreground">
-                  • Ended on {formatDate(call.endedAt)}
-                </span>
+                <>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span>Ended {formatDate(call.endedAt)}</span>
+                </>
               )}
-            </p>
+            </div>
           </div>
-          <Button onClick={() => router.push(`/call?title=${encodeURIComponent(call.name)}`)}>
-            Start This Call
-          </Button>
         </div>
 
-        <div className="grid gap-6">
-          {/* Context Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Context</CardTitle>
-              <CardDescription>Background information and current state</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none">
-                <p className="text-muted-foreground whitespace-pre-wrap">{call.context}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Raw Objectives Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Raw Objectives</CardTitle>
-              <CardDescription>Original objectives as entered</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none">
-                <p className="text-muted-foreground whitespace-pre-wrap">{call.objectives}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Parsed Objectives Card */}
+        {/* First Screen - Objectives and Action Items Side by Side */}
+        <div className="grid gap-6 lg:grid-cols-2 mb-6">
+          {/* Objectives */}
           {call.parsedObjectives.length > 0 && (
-            <Card>
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  Objectives
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">Objectives</CardTitle>
                   {call.completedObjectives && (
-                    <span className="text-sm text-muted-foreground">
-                      ({call.completedObjectives.length}/{call.parsedObjectives.length} completed)
-                    </span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
+                      <span className="text-sm font-medium">
+                        {call.completedObjectives.length}/{call.parsedObjectives.length}
+                      </span>
+                      <span className="text-xs text-muted-foreground">completed</span>
+                    </div>
                   )}
-                </CardTitle>
-                <CardDescription>AI-processed and prioritized objectives</CardDescription>
+                </div>
+                <CardDescription>Prioritized goals for this call</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {call.parsedObjectives
                     .sort((a, b) => a.priority - b.priority)
-                    .map((obj, index) => {
+                    .map((obj) => {
                       const isCompleted = call.completedObjectives?.includes(obj.id) || false;
-                      
+
                       return (
                         <div
-                          key={obj.id} 
-                          className={`p-4 rounded-lg border transition-all duration-300 ${
-                            isCompleted 
-                              ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-90" 
+                          key={obj.id}
+                          className={`p-3 rounded-lg border-2 transition-all duration-300 ${
+                            isCompleted
+                              ? "bg-green-50/50 border-green-200 dark:bg-green-950/30 dark:border-green-800"
                               : getPriorityColor(obj.priority)
                           }`}
                         >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-3 flex-1">
-                              {isCompleted && (
-                                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                          <div className="flex items-start gap-2">
+                            <div className="mt-0.5">
+                              {isCompleted ? (
+                                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                              ) : (
+                                <Circle className="w-5 h-5 text-muted-foreground" />
                               )}
-                              <h4 className={`font-semibold text-base ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
-                                {obj.title}
-                              </h4>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/50">
-                                {getPriorityLabel(obj.priority)}
-                              </span>
-                              <span className="text-xs font-bold">
-                                P{obj.priority}
-                              </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h4 className={`font-semibold text-base ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
+                                  {obj.title}
+                                </h4>
+                                <span className="text-xs font-medium px-2 py-0.5 rounded bg-background/80 border flex-shrink-0">
+                                  P{obj.priority}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground leading-relaxed">{obj.description}</p>
                             </div>
                           </div>
-                          <p className="text-sm opacity-90">{obj.description}</p>
                         </div>
                       );
                     })}
@@ -219,32 +192,57 @@ export default function CallDetailPage() {
             </Card>
           )}
 
-          {/* Insights Section */}
-          {call.insights && call.insights.length > 0 && (
-            <Card>
+          {/* Action Items */}
+          {call.actionItems && call.actionItems.length > 0 && (
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5" />
-                  Insights ({call.insights.length})
-                </CardTitle>
-                <CardDescription>Key insights from the call</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <CardTitle className="text-xl">Action Items</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
+                    <span className="text-sm font-medium">
+                      {call.actionItems.filter(item => item.completed).length}/{call.actionItems.length}
+                    </span>
+                    <span className="text-xs text-muted-foreground">completed</span>
+                  </div>
+                </div>
+                <CardDescription>Tasks and follow-ups from the call</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {call.insights.map((insight, index) => (
+                  {call.actionItems.map((item, index) => (
                     <div
-                      key={insight.id || index}
-                      className={`p-4 rounded-lg border ${getInsightColor(insight.type)}`}
+                      key={item.id || index}
+                      className={`p-3 rounded-lg border-2 transition-all hover:shadow-sm ${
+                        item.completed
+                          ? "bg-green-50/50 border-green-200 dark:bg-green-950/30 dark:border-green-800"
+                          : "bg-background border-border"
+                      }`}
                     >
-                      <div className="flex items-start gap-3">
-                        {getInsightIcon(insight.type)}
+                      <div className="flex items-start gap-2">
+                        <div className="mt-0.5">
+                          {item.completed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-base">{insight.title}</h4>
-                          <p className="text-sm opacity-90 mt-1">{insight.description}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Clock className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(insight.timestamp).toLocaleString('en-US', {
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className={`font-semibold text-base ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                              {item.title}
+                            </h4>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${getActionItemPriorityColor(item.priority)}`}>
+                              {item.priority}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed mb-2">{item.description}</p>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {new Date(item.timestamp).toLocaleString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
@@ -260,49 +258,68 @@ export default function CallDetailPage() {
               </CardContent>
             </Card>
           )}
+        </div>
 
-          {/* Action Items Section */}
-          {call.actionItems && call.actionItems.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5" />
-                  Action Items ({call.actionItems.length})
-                </CardTitle>
-                <CardDescription>Tasks and follow-ups from the call</CardDescription>
+        {/* Second Screen - Context, Original Objectives, and Insights */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Main Content Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Context Card */}
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Context</CardTitle>
+                <CardDescription>Background information</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {call.actionItems.map((item, index) => (
-                    <div
-                      key={item.id || index}
-                      className={`p-4 rounded-lg border ${
-                        item.completed
-                          ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75"
-                          : "bg-background border-border"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          {item.completed ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className={`font-semibold text-base ${item.completed ? "line-through text-muted-foreground" : ""}`}>
-                            {item.title}
-                          </h4>
-                          <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${getActionItemPriorityColor(item.priority)}`}>
-                              {item.priority}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(item.timestamp).toLocaleString('en-US', {
+                <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{call.context}</p>
+              </CardContent>
+            </Card>
+
+            {/* Original Objectives Card */}
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Original Objectives</CardTitle>
+                <CardDescription>Initial goals</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{call.objectives}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Sidebar - Insights */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Insights Section */}
+            {call.insights && call.insights.length > 0 && (
+              <Card className="shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                      <CardTitle className="text-lg">Insights</CardTitle>
+                    </div>
+                    <span className="text-sm text-muted-foreground">{call.insights.length} items</span>
+                  </div>
+                  <CardDescription>Key observations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {call.insights.map((insight, index) => (
+                      <div
+                        key={insight.id || index}
+                        className={`p-3 rounded-lg border-2 transition-all hover:shadow-sm ${getInsightColor(insight.type)}`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="mt-0.5 flex-shrink-0">
+                            {getInsightIcon(insight.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm mb-1">{insight.title}</h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed mb-2">{insight.description}</p>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              <span>
+                                {new Date(insight.timestamp).toLocaleString('en-US', {
                                   month: 'short',
                                   day: 'numeric',
                                   hour: '2-digit',
@@ -313,13 +330,12 @@ export default function CallDetailPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>
