@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const tasksText = tasks
       .map(
         (task: any) =>
-          `- PENDING ${task.id}: ${task.title}${
+          `- ${task.id}: ${task.title}${
             task.description ? ` - ${task.description}` : ''
           }`
       )
@@ -65,7 +65,7 @@ TASKS:
 ${tasksText}
 
 For each task, determine:
-1. If it's completed (completed: true) or pending (completed: false) 
+1. If it's completed (completed: true) or pending (completed: false) depending on the conversation.
 2. An explanatory message of why it's completed (only if the task is completed, if not message will be empty string)
 
 You must respond with a JSON with the following structure:
