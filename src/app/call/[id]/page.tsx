@@ -244,7 +244,12 @@ export default function CallDetailPage() {
                           <div className="flex items-center gap-2 mt-2">
                             <Clock className="w-3 h-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">
-                              {new Date(insight.timestamp).toLocaleTimeString()}
+                              {new Date(insight.timestamp).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
                             </span>
                           </div>
                         </div>
@@ -297,7 +302,12 @@ export default function CallDetailPage() {
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3 text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">
-                                {new Date(item.timestamp).toLocaleTimeString()}
+                                {new Date(item.timestamp).toLocaleString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
                               </span>
                             </div>
                           </div>

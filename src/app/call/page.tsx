@@ -340,32 +340,24 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
         return newSet;
       });
 
-      // Add new insights from API response (deduplicate by ID)
-      if (result.insights && result.insights.length > 0) {
-        setInsights((prev) => {
-          const existingIds = new Set(prev.map((i) => i.id));
-          const newInsights = result.insights
-            .filter((insight: any) => !existingIds.has(insight.id))
-            .map((insight: any) => ({
-              ...insight,
-              timestamp: new Date(insight.timestamp),
-            }));
-          return [...newInsights, ...prev];
-        });
+      // Replace insights with complete list from API response
+      if (result.allInsights && result.allInsights.length > 0) {
+        setInsights(
+          result.allInsights.map((insight: any) => ({
+            ...insight,
+            timestamp: new Date(insight.timestamp),
+          }))
+        );
       }
 
-      // Add new action items from API response (deduplicate by ID)
-      if (result.actionItems && result.actionItems.length > 0) {
-        setActionItems((prev) => {
-          const existingIds = new Set(prev.map((i) => i.id));
-          const newActionItems = result.actionItems
-            .filter((item: any) => !existingIds.has(item.id))
-            .map((item: any) => ({
-              ...item,
-              timestamp: new Date(item.timestamp),
-            }));
-          return [...newActionItems, ...prev];
-        });
+      // Replace action items with complete list from API response
+      if (result.allActionItems && result.allActionItems.length > 0) {
+        setActionItems(
+          result.allActionItems.map((item: any) => ({
+            ...item,
+            timestamp: new Date(item.timestamp),
+          }))
+        );
       }
 
       // Only show alert for manual analysis (when no transcriptionText parameter)
@@ -552,9 +544,7 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                   <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 </h3>
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-slate-900 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap animate-in fade-in duration-700">
-                    {transcriptions.map((t) => t.text).join(" ")}
-                  </p>
+                  <p className="text-slate-900 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap animate-in fade-in duration-700">{transcriptions.map((t) => t.text).join(" ")}</p>
                 </div>
               </div>
             </div>
@@ -657,38 +647,25 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                         transition-all duration-500 ease-out
                         animate-in fade-in slide-in-from-right
                         hover:scale-[1.02] hover:shadow-lg
-                        ${
-                          item.completed
-                            ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75 scale-[0.98]"
-                            : "bg-background border-border hover:border-primary/50"
-                        }
+                        ${item.completed ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75 scale-[0.98]" : "bg-background border-border hover:border-primary/50"}
                       `}
                     >
                       <div className="flex items-start gap-3">
                         <div className={`mt-0.5 transition-all duration-500 ${item.completed ? "scale-125 rotate-[360deg]" : "hover:scale-110"}`}>
-                          {item.completed ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600 drop-shadow-lg" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-muted-foreground transition-colors duration-300" />
-                          )}
+                          {item.completed ? <CheckCircle2 className="w-5 h-5 text-green-600 drop-shadow-lg" /> : <Circle className="w-5 h-5 text-muted-foreground transition-colors duration-300" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className={`text-base font-medium transition-all duration-500 ${item.completed ? "line-through text-muted-foreground opacity-75" : ""}`}>{item.title}</h3>
                           <p className={`text-sm text-muted-foreground mt-1 transition-opacity duration-500 ${item.completed ? "opacity-60" : ""}`}>{item.description || "No description"}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full transition-all duration-300 ${getActionItemPriorityColor(item.priority)} ${item.completed ? "opacity-50 scale-90" : ""}`}>
-                              {item.priority}
-                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full transition-all duration-300 ${getActionItemPriorityColor(item.priority)} ${item.completed ? "opacity-50 scale-90" : ""}`}>{item.priority}</span>
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3 text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleTimeString()}</span>
                             </div>
                           </div>
                           {!item.completed && (
-                            <button
-                              onClick={() => completeActionItem(item.id)}
-                              className="mt-2 text-sm text-primary hover:underline font-medium transition-all duration-200 hover:translate-x-1"
-                            >
+                            <button onClick={() => completeActionItem(item.id)} className="mt-2 text-sm text-primary hover:underline font-medium transition-all duration-200 hover:translate-x-1">
                               Mark as complete
                             </button>
                           )}
@@ -729,11 +706,7 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                       ${objective.completed ? "scale-125 rotate-[360deg]" : "hover:scale-110"}
                     `}
                   >
-                    {objective.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 drop-shadow-lg" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-muted-foreground transition-colors duration-300" />
-                    )}
+                    {objective.completed ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 drop-shadow-lg" /> : <Circle className="w-5 h-5 text-muted-foreground transition-colors duration-300" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3
@@ -779,11 +752,7 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                 className={`
                   h-full rounded-full
                   transition-all duration-700 ease-out
-                  ${
-                    objectives.filter((o) => o.completed).length === objectives.length
-                      ? "bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-500/50"
-                      : "bg-gradient-to-r from-blue-500 to-green-500"
-                  }
+                  ${objectives.filter((o) => o.completed).length === objectives.length ? "bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-500/50" : "bg-gradient-to-r from-blue-500 to-green-500"}
                 `}
                 style={{
                   width: `${(objectives.filter((o) => o.completed).length / objectives.length) * 100}%`,

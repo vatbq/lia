@@ -41,23 +41,23 @@ const responseSchema = z.object({
       message: z.string().optional(),
     })
   ),
-  actionItems: z.array(
+  allActionItems: z.array(
     z.object({
       id: z.string(),
       title: z.string(),
       description: z.string().optional(),
       priority: z.enum(["low", "medium", "high"]).optional(),
       completed: z.boolean(),
-      timestamp: z.string().default(new Date().toISOString()),
+      timestamp: z.string().optional(),
     })
   ),
-  insights: z.array(
+  allInsights: z.array(
     z.object({
       id: z.string(),
       title: z.string(),
       description: z.string(),
       type: z.enum(["positive", "negative", "neutral", "warning"]),
-      timestamp: z.string().default(new Date().toISOString()),
+      timestamp: z.string().optional(),
     })
   ),
 });
@@ -114,61 +114,35 @@ For each task in the list above, carefully determine if it has been completed ba
 - \`completed\`: true/false based on the criteria
 - \`message\`: If completed, explain what was done and how you know it's complete (2-3 sentences). If not completed, provide an empty string "".
 
-## 2. ACTION ITEMS EXTRACTION
-Scan the conversation for NEW action items that are SPECIFIC, COMMITTED, and NOT DUPLICATES.
+## 2. COMPLETE ACTION ITEMS LIST
+Return ALL action items (existing + new ones from conversation). Include existing action items with their current properties, and add any new action items mentioned in the conversation.
 
-**CRITICAL - DUPLICATE CHECK (MUST DO FIRST):**
-1. Read through ALL existing action items carefully
-2. For each potential new action item, ask: "Is this already captured or very similar to an existing item?"
-3. If YES to any similarity, DO NOT create the action item
-4. Only create action items that are completely NEW and distinct
-
-**ONLY Extract Action Items That Are:**
+**For existing action items:** Keep them as-is with their current properties
+**For new action items:** Look for:
 - **Explicitly committed with clear ownership**: Someone specifically said "I will...", "I'll...", "I need to...", "We must..."
-- **Scheduled or time-bound**: Mentions a specific date, time, deadline, or scheduling requirement (e.g., "meeting next Tuesday", "send by Friday", "schedule a call")
-- **Concrete and specific**: Has a clear deliverable or outcome (e.g., "send the report to John", NOT "think about the report")
+- **Scheduled or time-bound**: Mentions a specific date, time, deadline, or scheduling requirement
+- **Concrete and specific**: Has a clear deliverable or outcome
 - **Future-oriented**: Something that needs to be done after this conversation
 
-**ABSOLUTELY DO NOT Extract:**
-- Vague statements without commitment (e.g., "we should maybe...", "it would be nice to...")
-- Past tense actions already completed (e.g., "I sent the email")
-- General ideas or discussions without clear next steps
-- Anything already captured in existing tasks or existing action items
-- Similar variations of existing action items (even with slightly different wording)
-- Hypothetical scenarios or possibilities without commitment
-- Questions or uncertainties without decisions
-- General observations, complaints, or comments without actionable outcomes
-
 **For each action item provide:**
-- \`id\`: Generate a unique ID (use format: "action-[timestamp]-[random]")
+- \`id\`: Use existing ID or generate a unique ID (use format: "action-[timestamp]-[random]")
 - \`title\`: Clear, concise action title (5-10 words)
 - \`description\`: More detailed context about what needs to be done and why
 - \`priority\`:
   - "high": Urgent, time-sensitive, or critical impact
   - "medium": Important but not urgent, standard priority
   - "low": Nice to have, can be deferred
-- \`completed\`: false (these are newly identified items)
+- \`completed\`: Current completion status
 
-## 3. INSIGHTS GENERATION
-Generate ONLY **EXCEPTIONAL** insights that represent MAJOR developments or critical information.
+## 3. COMPLETE INSIGHTS LIST
+Return ALL insights (existing + new ones from conversation). Include existing insights and add any new meaningful insights about the conversation.
 
-**CRITICAL RESTRICTIONS:**
-- Review "EXISTING INSIGHTS" - DO NOT create similar or duplicate insights
-- **DEFAULT TO EMPTY ARRAY** - Most conversations should generate ZERO new insights
-- Only create insights for truly exceptional, high-impact information or if someone mentions that this is an insight.
+**For existing insights:** Keep them as-is with their current properties
+**For new insights:** Generate ONLY **EXCEPTIONAL** insights that represent MAJOR developments or critical information.
 
 **When to Generate Insights (VERY RARELY):**
 - MAJOR project milestones completed
 - SIGNIFICANT strategic decisions made
-
-**DO NOT Generate Insights For:**
-- Normal work progress or routine updates
-- Minor issues or small problems
-- Regular task completion (this goes in task status)
-- General observations or thoughts mentioned
-- Anything that's not exceptionally significant
-- Information already in action items
-- Discussions without major outcomes
 
 **Insight Types (use only for exceptional cases):**
 - \`positive\`: Major achievements, critical wins, significant completed goals
@@ -176,14 +150,8 @@ Generate ONLY **EXCEPTIONAL** insights that represent MAJOR developments or crit
 - \`warning\`: High-risk situations, serious red flags, urgent concerns
 - \`neutral\`: Major strategic decisions, significant pivots
 
-**Quality Guidelines (EXTREMELY STRICT):**
-- **Maximum 0-1 insights per topic** (2 only in exceptional cases)
-- Each insight must represent MAJOR new information
-- If in doubt, DO NOT generate the insight
-- Empty array is the correct answer most of the time
-
 **For each insight provide:**
-- \`id\`: Generate a unique ID (use format: "insight-[timestamp]-[random]")
+- \`id\`: Use existing ID or generate a unique ID (use format: "insight-[timestamp]-[random]")
 - \`title\`: Concise insight summary (5-10 words)
 - \`description\`: Detailed explanation with context and implications (2-4 sentences)
 - \`type\`: Choose the most appropriate type from above
@@ -199,19 +167,19 @@ Return your analysis in the following structure (all arrays, no nested objects):
       "message": "Explanation of completion with evidence from conversation"
     }
   ],
-  "actionItems": [
+  "allActionItems": [
     {
-      "id": "action-123-abc",
-      "title": "Short action title",
-      "description": "Detailed description of what needs to be done",
+      "id": "existing-or-new-action-id",
+      "title": "Action title",
+      "description": "Description of what needs to be done",
       "priority": "high",
       "completed": false
     }
   ],
-  "insights": [
+  "allInsights": [
     {
-      "id": "insight-123-abc",
-      "title": "Key insight title",
+      "id": "existing-or-new-insight-id",
+      "title": "Insight title",
       "description": "Detailed explanation of the insight with context and implications",
       "type": "positive"
     }
@@ -223,25 +191,8 @@ Return your analysis in the following structure (all arrays, no nested objects):
 - Generate IDs that are unique and won't collide (use timestamp + random string)
 - Use professional, clear language in all messages and descriptions
 - All existing tasks MUST be included in the response with their status
-- **ONLY RETURN NEW CONTENT:** The actionItems and insights arrays should ONLY contain newly identified items that are NOT already in the existing lists. Do not include any existing action items or insights in your response.
-
-# CRITICAL DUPLICATE PREVENTION RULES
-- **BEFORE creating ANY action item:** Check if it already exists or is similar to existing ones
-- **If in doubt, DO NOT create it** - better to miss an action item than create a duplicate
-- **Action items should be RARE** - most conversations should generate 0-2 action items maximum
-- **Only create action items with explicit commitment + specificity + scheduling/deadlines**
-- **INSIGHTS ARE EXTREMELY RARE:** Most conversations should generate ZERO insights. Default to empty array unless there's MAJOR new information
-- **Maximum 0-1 insights** per conversation (2 only in exceptional cases with critical information)
-
-# DUPLICATE CHECK PROCEDURE FOR ACTION ITEMS:
-1. Read the potential action item you want to create
-2. Read through EVERY existing action item
-3. Ask yourself: "Does any existing item cover this same goal, task, or commitment?"
-4. If YES - DO NOT CREATE IT
-5. If MAYBE - DO NOT CREATE IT (err on the side of not duplicating)
-6. If NO and it meets all criteria (committed + specific + scheduled) - CREATE IT
-
-# YOU WILL BE PENALIZED FOR CREATING DUPLICATE ACTION ITEMS OR INSIGHTS. ALWAYS DEFAULT TO EMPTY ARRAYS IF UNCERTAIN.
+- **RETURN COMPLETE LISTS:** The allActionItems and allInsights arrays should contain ALL items (existing + new). Include existing items with their current properties and add any new items from the conversation.
+- **NO DUPLICATES:** Each item should have a unique ID. Don't create multiple items with the same or very similar content.
 `;
 
     const { object } = await generateObject({
@@ -250,7 +201,21 @@ Return your analysis in the following structure (all arrays, no nested objects):
       prompt: prompt,
     });
 
-    return NextResponse.json(object);
+    // Add timestamps to each insight and action item
+    const currentTime = new Date().toISOString();
+    const objectWithTimestamps = {
+      ...object,
+      allInsights: object.allInsights.map((insight) => ({
+        ...insight,
+        timestamp: insight.timestamp || currentTime,
+      })),
+      allActionItems: object.allActionItems.map((item) => ({
+        ...item,
+        timestamp: item.timestamp || currentTime,
+      })),
+    };
+
+    return NextResponse.json(objectWithTimestamps);
   } catch (error: any) {
     console.error("Error analyzing tasks:", error);
 
