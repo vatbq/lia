@@ -3,20 +3,19 @@ import { generateObject } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-// Esquema para validar el input
+// Schema to validate input
 const requestSchema = z.object({
   tasks: z.array(
     z.object({
       id: z.string(),
       title: z.string(),
       description: z.string().optional(),
-      completed: z.boolean().optional(),
     })
   ),
   transcription: z.string(),
 });
 
-// Esquema para la respuesta
+// Schema for the response
 const responseSchema = z.object({
   tasks: z.record(
     z.string(),
@@ -32,49 +31,43 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     console.log(process.env.OPENAI_API_KEY);
-    // Validar el input
+    // Validate the input
     const { tasks, transcription } = requestSchema.parse(body);
 
-    // Preparar el contexto para el AI
+    // Prepare the context for the AI
     const conversationText = transcription;
 
     const tasksText = tasks
       .map(
         (task: any) =>
-          `- ${task.id}: ${task.title}${
+          `- PENDING ${task.id}: ${task.title}${
             task.description ? ` - ${task.description}` : ''
-          }${
-            task.completed !== undefined
-              ? ` (Currently: ${task.completed ? 'COMPLETED' : 'PENDING'})`
-              : ''
           }`
       )
       .join('\n');
 
-    const prompt = `Analiza la siguiente conversación y lista de tareas. Determina el estado de cada tarea basándote en la conversación.
+    const prompt = `Analyze the following conversation and task list. Determine the status of each task based on the conversation.
 
-CONVERSACIÓN:
+CONVERSATION:
 ${conversationText}
 
-TAREAS:
+TASKS:
 ${tasksText}
 
-Para cada tarea, determina:
-1. Si está completada (completed: true) o pendiente (completed: false) basándote en la conversación
-2. Un mensaje explicativo (que solo sera si la tarea esta completada)
-   - Si está completada: explica por qué se considera completada
+For each task, determine:
+1. If it's completed (completed: true) or pending (completed: false) 
+2. An explanatory message of why it's completed (only if the task is completed)
 
-Debes responder con un JSON con la estructura:
+You must respond with a JSON with the following structure:
 {
   "tasks": {
     "task-id": {
       "completed": boolean,
-      "message": "string explicativo en caso de estar completada"
+      "message": "explanatory string if completed"
     }
   }
 }
-
-Donde cada key del objeto tasks es el ID de la tarea.`;
+`;
 
     const { object } = await generateObject({
       model: openai('gpt-4o-mini'),
