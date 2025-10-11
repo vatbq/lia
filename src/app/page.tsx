@@ -46,11 +46,23 @@ export default function Home() {
 
   // For editing objectives
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Objective>({ id: "", title: "", description: "", completed: false, priority: 1 });
+  const [editForm, setEditForm] = useState<Objective>({
+    id: "",
+    title: "",
+    description: "",
+    completed: false,
+    priority: 1,
+  });
 
   // For adding new objectives
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newObjective, setNewObjective] = useState<Objective>({ id: "", title: "", description: "", completed: false, priority: 1 });
+  const [newObjective, setNewObjective] = useState<Objective>({
+    id: "",
+    title: "",
+    description: "",
+    completed: false,
+    priority: 1,
+  });
 
   // Helper to clamp priority between 1 and 5
   function clampPriority(value: string | number): number {
@@ -78,14 +90,16 @@ export default function Home() {
     {
       id: uuidv4(),
       title: "Assign Ownership",
-      description: "Assign clear ownership and responsibilities for each Q4 feature",
+      description:
+        "Assign clear ownership and responsibilities for each Q4 feature",
       completed: false,
       priority: 2,
     },
     {
       id: uuidv4(),
       title: "Set Timelines",
-      description: "Establish realistic timelines and milestones for Q4 deliverables",
+      description:
+        "Establish realistic timelines and milestones for Q4 deliverables",
       completed: false,
       priority: 2,
     },
@@ -166,7 +180,13 @@ export default function Home() {
       priority: clampPriority(newObjective.priority),
     };
     setParsedObjectives([...parsedObjectives, clampedObjective]);
-    setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
+    setNewObjective({
+      id: "",
+      title: "",
+      description: "",
+      completed: false,
+      priority: 1,
+    });
     setIsAddingNew(false);
     setError(null);
   }
@@ -194,7 +214,13 @@ export default function Home() {
 
   function handleCancelEdit() {
     setEditingId(null);
-    setEditForm({ id: "", title: "", description: "", completed: false, priority: 1 });
+    setEditForm({
+      id: "",
+      title: "",
+      description: "",
+      completed: false,
+      priority: 1,
+    });
   }
 
   function handleDeleteObjective(index: number) {
@@ -202,10 +228,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen w-full px-6 py-10 sm:px-8">
-      <div className="mx-auto max-w-2xl">
-        <div>
-          <div className="mb-6">
+    <div className="min-h-screen w-full py-10 px-32">
+      <div>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
             <h1 className="text-2xl font-semibold">Prepare your call</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {step === 1
@@ -214,8 +240,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Progress Indicator */}
-          <div className="mb-8 flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             <div className="flex items-center gap-2">
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
@@ -226,7 +251,9 @@ export default function Home() {
               >
                 1
               </div>
-              <span className={`text-sm ${step === 1 ? "font-medium" : "text-muted-foreground"}`}>
+              <span
+                className={`text-sm ${step === 1 ? "font-medium" : "text-muted-foreground"}`}
+              >
                 Input
               </span>
             </div>
@@ -241,26 +268,32 @@ export default function Home() {
               >
                 2
               </div>
-              <span className={`text-sm ${step === 2 ? "font-medium" : "text-muted-foreground"}`}>
+              <span
+                className={`text-sm ${step === 2 ? "font-medium" : "text-muted-foreground"}`}
+              >
                 Review
               </span>
             </div>
           </div>
+        </div>
 
-          <div>
-            {/* Step 1: Input Form */}
-            {step === 1 && (
-              <>
-                <form className="space-y-4" onSubmit={onSubmit}>
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Call title (optional)</Label>
-                    <Input
-                      id="name"
-                      placeholder="Quarterly strategy sync"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
-                  </div>
+        {/* Progress Indicator */}
+
+        <div>
+          {/* Step 1: Input Form */}
+          {step === 1 && (
+            <>
+              <form className="space-y-4" onSubmit={onSubmit}>
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Call title (optional)</Label>
+                  <Input
+                    id="name"
+                    placeholder="Quarterly strategy sync"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="context">Context</Label>
                     <Textarea
@@ -268,6 +301,7 @@ export default function Home() {
                       placeholder="Background, who is involved, current state..."
                       value={context}
                       onChange={(e) => setContext(e.target.value)}
+                      rows={12}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -277,30 +311,237 @@ export default function Home() {
                       placeholder="What you want to achieve in this call..."
                       value={objectives}
                       onChange={(e) => setObjectives(e.target.value)}
+                      rows={12}
                     />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Button type="submit" disabled={loading}>
-                      {loading ? "Clarifying..." : "Next: Review objectives"}
-                    </Button>
-                  </div>
-                </form>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Clarifying..." : "Next: Review objectives"}
+                  </Button>
+                </div>
+              </form>
 
-                {error && (
-                  <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-                    {error}
-                  </div>
-                )}
-              </>
-            )}
+              {error && (
+                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                  {error}
+                </div>
+              )}
+            </>
+          )}
 
-            {/* Step 2: Review Objectives */}
-            {step === 2 && (
-              <>
-                <div className="grid gap-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium">Objectives</h4>
+          {/* Step 2: Review Objectives */}
+          {step === 2 && (
+            <>
+              <div className="grid gap-4">
+                <div>
+                  <div className="space-y-3">
+                    {parsedObjectives.map((obj, i) => (
+                      <div key={i} className="rounded-md border p-3">
+                        {editingId === i ? (
+                          <div className="space-y-2">
+                            <div>
+                              <Label className="text-xs">Name</Label>
+                              <Input
+                                value={editForm.title}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    title: e.target.value,
+                                  })
+                                }
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Description</Label>
+                              <Textarea
+                                value={editForm.description}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    description: e.target.value,
+                                  })
+                                }
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Priority (1-5)</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="5"
+                                value={editForm.priority}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    priority: clampPriority(e.target.value),
+                                  })
+                                }
+                                className="mt-1"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={handleSaveEdit}>
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleCancelEdit}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">
+                                  {obj.title}
+                                </div>
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  {obj.description}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Priority: {obj.priority}
+                                </div>
+                              </div>
+                              <div className="flex gap-1 ml-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleStartEdit(i)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteObjective(i)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {isAddingNew && (
+                      <div className="rounded-md border border-primary p-3 space-y-2">
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Label className="text-xs">Name</Label>
+                            <Input
+                              value={newObjective.title}
+                              onChange={(e) =>
+                                setNewObjective({
+                                  ...newObjective,
+                                  title: e.target.value,
+                                })
+                              }
+                              placeholder="Objective title"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Priority</Label>
+                            <div className="flex gap-0 mt-1 bg-muted rounded-md p-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewObjective({
+                                    ...newObjective,
+                                    priority: 1,
+                                  })
+                                }
+                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
+                                  newObjective.priority === 1
+                                    ? "text-green-600"
+                                    : "text-muted-foreground hover:text-green-500"
+                                }`}
+                              >
+                                Low
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewObjective({
+                                    ...newObjective,
+                                    priority: 2,
+                                  })
+                                }
+                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
+                                  newObjective.priority === 2
+                                    ? "text-yellow-600"
+                                    : "text-muted-foreground hover:text-yellow-500"
+                                }`}
+                              >
+                                Medium
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewObjective({
+                                    ...newObjective,
+                                    priority: 3,
+                                  })
+                                }
+                                className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
+                                  newObjective.priority === 3
+                                    ? "text-red-600"
+                                    : "text-muted-foreground hover:text-red-500"
+                                }`}
+                              >
+                                High
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Description</Label>
+                          <Textarea
+                            value={newObjective.description}
+                            onChange={(e) =>
+                              setNewObjective({
+                                ...newObjective,
+                                description: e.target.value,
+                              })
+                            }
+                            placeholder="Objective description"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleAddObjective}>
+                            Add
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setIsAddingNew(false);
+                              setNewObjective({
+                                id: "",
+                                title: "",
+                                description: "",
+                                completed: false,
+                                priority: 1,
+                              });
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-center">
                       <Button
                         size="sm"
                         variant="outline"
@@ -309,178 +550,38 @@ export default function Home() {
                         + Add Objective
                       </Button>
                     </div>
-
-                    <div className="space-y-3">
-                      {parsedObjectives.map((obj, i) => (
-                        <div key={i} className="rounded-md border p-3">
-                          {editingId === i ? (
-                            <div className="space-y-2">
-                              <div>
-                                <Label className="text-xs">Name</Label>
-                                <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="mt-1" />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Description</Label>
-                                <Textarea
-                                  value={editForm.description}
-                                  onChange={(e) =>
-                                    setEditForm({
-                                      ...editForm,
-                                      description: e.target.value,
-                                    })
-                                  }
-                                  className="mt-1"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Priority (1-5)</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  max="5"
-                                  value={editForm.priority}
-                                  onChange={(e) =>
-                                    setEditForm({
-                                      ...editForm,
-                                      priority: clampPriority(e.target.value),
-                                    })
-                                  }
-                                  className="mt-1"
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={handleSaveEdit}>
-                                  Save
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={handleCancelEdit}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="font-medium text-sm">{obj.title}</div>
-                                  <div className="text-sm text-muted-foreground mt-1">{obj.description}</div>
-                                  <div className="text-xs text-muted-foreground mt-1">Priority: {obj.priority}</div>
-                                </div>
-                                <div className="flex gap-1 ml-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleStartEdit(i)}
-                                  >
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleDeleteObjective(i)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-                      {isAddingNew && (
-                        <div className="rounded-md border border-primary p-3 space-y-2">
-                          <div>
-                            <Label className="text-xs">Name</Label>
-                            <Input value={newObjective.title} onChange={(e) => setNewObjective({ ...newObjective, title: e.target.value })} placeholder="Objective title" className="mt-1" />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Description</Label>
-                            <Textarea
-                              value={newObjective.description}
-                              onChange={(e) =>
-                                setNewObjective({
-                                  ...newObjective,
-                                  description: e.target.value,
-                                })
-                              }
-                              placeholder="Objective description"
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Priority (1-5)</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="5"
-                              value={newObjective.priority}
-                              onChange={(e) =>
-                                setNewObjective({
-                                  ...newObjective,
-                                  priority: clampPriority(e.target.value),
-                                })
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={handleAddObjective}>
-                              Add
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setIsAddingNew(false);
-                                setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
+              </div>
 
-                {error && (
-                  <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                <div className="flex gap-2 mt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep(1)}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      saveCall({
-                        name: name || "Call",
-                        context,
-                        objectives,
-                        parsedObjectives,
-                      });
-                      router.push(
-                        `/call?title=${encodeURIComponent(name || "Call")}`,
-                      );
-                    }}
-                  >
-                    Start call
-                  </Button>
+              {error && (
+                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                  {error}
                 </div>
-              </>
-            )}
-          </div>
+              )}
+
+              <div className="flex gap-2 mt-6">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  Back
+                </Button>
+                <Button
+                  onClick={() => {
+                    saveCall({
+                      name: name || "Call",
+                      context,
+                      objectives,
+                      parsedObjectives,
+                    });
+                    router.push(
+                      `/call?title=${encodeURIComponent(name || "Call")}`,
+                    );
+                  }}
+                >
+                  Start call
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
