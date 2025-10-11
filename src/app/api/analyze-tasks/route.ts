@@ -78,7 +78,7 @@ You must respond with a JSON with the following structure:
   }
 }
 
-Additionally, extract any action items mentioned in the conversation only if you can identify them clearly.
+Additionally, extract any action items mentioned in the conversation.
 For example if the conversation includes "We need to schedule a follow-up meeting", create an action item like:
 
 actionItems: [
