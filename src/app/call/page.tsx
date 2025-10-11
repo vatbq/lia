@@ -28,7 +28,6 @@ interface Objective {
   completed?: boolean;
   priority: number;
   status?: 'pending' | 'in_progress' | 'completed';
-  statusMessage?: string;
 }
 
 interface Insight {
@@ -73,11 +72,14 @@ export default function CallPage({
   // Task Analysis state
   const [transcription, setTranscription] = useState('');
   const [taskAnalysisLoading, setTaskAnalysisLoading] = useState(false);
+  const [lastAnalysisTranscription, setLastAnalysisTranscription] = useState('');
 
   // Audio transcription state
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
+  const transcriptionsRef = useRef<Transcription[]>([]);
   const hasSetupMicrophoneRef = useRef<boolean>(false);
   const hasMicrophoneStartedRef = useRef<boolean>(false);
+  const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Audio hooks
   const {
@@ -137,6 +139,11 @@ export default function CallPage({
     }
   }, []);
 
+  // Keep transcriptions ref in sync with state
+  useEffect(() => {
+    transcriptionsRef.current = transcriptions;
+  }, [transcriptions]);
+
   useEffect(() => {
     // Connect to Socket.IO server
     const newSocket: Socket = io("http://localhost:3000");
@@ -167,8 +174,7 @@ export default function CallPage({
           obj.id === data.id ? {
             ...obj,
             completed: data.status === 'completed',
-            status: data.status,
-            statusMessage: data.message
+            status: data.status
           } : obj
         );
       });
@@ -223,8 +229,7 @@ export default function CallPage({
             return {
               ...obj,
               completed: taskAnalysis.completed,
-              status: taskAnalysis.completed ? 'completed' : 'pending',
-              statusMessage: taskAnalysis.message
+              status: taskAnalysis.completed ? 'completed' : 'pending'
             };
           }
           return obj;
@@ -308,15 +313,23 @@ export default function CallPage({
 
       if (transcript && transcript !== "") {
         console.log("[CallPage] Transcript received:", transcript);
-        setTranscriptions((prev) => [
-          ...prev,
-          {
-            id: transcriptData.item_id,
-            text: transcript,
-            timestamp: Date.now(),
-          },
-        ]);
+        
+        const newTranscription = {
+          id: transcriptData.item_id,
+          text: transcript,
+          timestamp: Date.now(),
+        };
+        
+        setTranscriptions((prev) => [...prev, newTranscription]);
         console.log("[CallPage] Transcript added to list");
+
+        // Auto-trigger debounced task analysis with accumulated transcription
+        const accumulatedTranscription = [...transcriptionsRef.current, newTranscription]
+          .map(t => t.text)
+          .join(" ");
+        
+        console.log("[CallPage] Triggering debounced task analysis with:", accumulatedTranscription);
+        debouncedAnalyzeTasks(accumulatedTranscription);
       } else {
         console.log("[CallPage] Transcript was empty or undefined");
       }
@@ -348,6 +361,11 @@ export default function CallPage({
       console.log("[CallPage] Cleaning up audio listeners");
       removeListener(RealtimeEvent.Transcript, onTranscript);
       removeAudioDataListener(onAudioData);
+      
+      // Clear any pending analysis timeout
+      if (analysisTimeoutRef.current) {
+        clearTimeout(analysisTimeoutRef.current);
+      }
     };
   }, [
     connectionState,
@@ -373,14 +391,22 @@ export default function CallPage({
     }
   };
 
-  const analyzeTasks = async () => {
-    if (!transcription.trim()) {
-      alert('Please enter a transcription');
+  const analyzeTasks = async (transcriptionText?: string) => {
+    const textToAnalyze = transcriptionText || transcription;
+    
+    if (!textToAnalyze.trim()) {
+      console.log('No transcription text to analyze');
       return;
     }
 
     if (objectives.length === 0) {
-      alert('No objectives available to analyze');
+      console.log('No objectives available to analyze');
+      return;
+    }
+
+    // Prevent duplicate analysis of the same transcription
+    if (textToAnalyze === lastAnalysisTranscription) {
+      console.log('Skipping duplicate analysis for same transcription');
       return;
     }
 
@@ -396,11 +422,9 @@ export default function CallPage({
           tasks: objectives.map(obj => ({
             id: obj.id,
             title: obj.title,
-            description: obj.description,
-            priority: obj.priority,
-            completed: obj.completed
+            description: obj.description
           })),
-          transcription: transcription
+          transcription: textToAnalyze
         }),
       });
 
@@ -411,6 +435,9 @@ export default function CallPage({
       const result = await response.json();
       console.log('Task analysis result:', result);
       
+      // Update the last analyzed transcription
+      setLastAnalysisTranscription(textToAnalyze);
+      
       // Emit socket event to update all clients
       if (socket) {
         socket.emit('update_task_analysis', {
@@ -420,14 +447,32 @@ export default function CallPage({
         console.log('📤 Task analysis results sent via socket');
       }
       
-      alert('Task analysis completed! Check the objectives above for updates.');
+      // Only show alert for manual analysis (when no transcriptionText parameter)
+      if (!transcriptionText) {
+        alert('Task analysis completed! Check the objectives above for updates.');
+      }
       
     } catch (error) {
       console.error('Error analyzing tasks:', error);
-      alert('Failed to analyze tasks. Check console for details.');
+      if (!transcriptionText) {
+        alert('Failed to analyze tasks. Check console for details.');
+      }
     } finally {
       setTaskAnalysisLoading(false);
     }
+  };
+
+  const debouncedAnalyzeTasks = (transcriptionText: string) => {
+    // Clear existing timeout
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
+    }
+
+    // Set new timeout for 3 seconds
+    analysisTimeoutRef.current = setTimeout(() => {
+      console.log('[CallPage] Debounced task analysis triggered');
+      analyzeTasks(transcriptionText);
+    }, 3000);
   };
 
   const endCall = async () => {
@@ -586,7 +631,7 @@ export default function CallPage({
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={analyzeTasks}
+                  onClick={() => analyzeTasks()}
                   disabled={taskAnalysisLoading || !transcription.trim() || objectives.length === 0}
                   className="gap-2"
                 >
@@ -771,17 +816,6 @@ export default function CallPage({
                     <p className="text-xs text-muted-foreground mt-1">
                       {objective.description}
                     </p>
-                    {objective.statusMessage && (
-                      <div className={`mt-2 p-2 rounded-md text-xs ${
-                        objective.status === 'completed'
-                          ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                          : objective.status === 'in_progress'
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                      }`}>
-                        {objective.statusMessage}
-                      </div>
-                    )}
                     <span
                       className={`
                         inline-block mt-2 text-xs px-2 py-0.5 rounded-full
