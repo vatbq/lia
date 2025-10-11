@@ -70,7 +70,7 @@ You must respond with a JSON with the following structure:
 `;
 
     const { object } = await generateObject({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-4.1-nano'),
       schema: responseSchema,
       prompt: prompt,
     });
