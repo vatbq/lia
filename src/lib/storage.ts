@@ -27,6 +27,19 @@ export interface CallData {
     completed: boolean;
     timestamp: string;
   }>;
+  objectivesArray?: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    completed?: boolean;
+    priority: number;
+    status?: 'pending' | 'in_progress' | 'completed';
+  }>;
+  transcriptions?: Array<{
+    id: string;
+    text: string;
+    timestamp: string;
+  }>;
   endedAt?: string;
 }
 

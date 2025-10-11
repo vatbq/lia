@@ -311,7 +311,7 @@ export default function CallPage({
       }
 
       const result = await response.json();
-      console.log('Task analysis result:', result);
+      console.log('Task analysis result:', JSON.stringify(result, null, 2));
       
       // Update the last analyzed transcription
       setLastAnalysisTranscription(textToAnalyze);
@@ -415,16 +415,31 @@ export default function CallPage({
         timestamp: item.timestamp.toISOString()
       }));
 
-      // Update the call with insights, action items, and completed objectives
+      // Convert objectives to storage format
+      const objectivesForStorage = objectives.map(obj => ({
+        ...obj,
+        // Ensure status is set correctly based on completion
+        status: (obj.completed ? 'completed' : 'pending') as 'pending' | 'in_progress' | 'completed'
+      }));
+
+      // Convert transcriptions to storage format
+      const transcriptionsForStorage = transcriptions.map(t => ({
+        ...t,
+        timestamp: new Date(t.timestamp).toISOString()
+      }));
+
+      // Update the call with insights, action items, objectives, and transcriptions
       const updatedCall = updateCall(currentCall.id, {
         insights: insightsForStorage,
         actionItems: actionItemsForStorage,
+        objectivesArray: objectivesForStorage,
         completedObjectives: Array.from(completedObjectiveIds),
+        transcriptions: transcriptionsForStorage,
         endedAt: new Date().toISOString()
       });
 
       if (updatedCall) {
-        console.log('Call ended successfully:', updatedCall);
+        console.log('Call ended successfully:', JSON.stringify(updatedCall, null, 2));
         // Navigate to the call detail page
         router.push(`/call/${currentCall.id}`);
       } else {
@@ -658,7 +673,7 @@ export default function CallPage({
                             {item.title}
                           </h3>
                           <p className="text-sm text-muted-foreground mt-1">
-                            {item.description}
+                            {item.description || 'No description'}
                           </p>
                           <div className="flex items-center justify-between mt-2">
                             <span className={`text-xs px-2 py-0.5 rounded-full ${getActionItemPriorityColor(item.priority)}`}>
@@ -734,7 +749,7 @@ export default function CallPage({
                       {objective.title}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {objective.description}
+                      {objective.description || 'No description'}
                     </p>
                     <span
                       className={`
