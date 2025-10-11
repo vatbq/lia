@@ -56,3 +56,8 @@ export function deleteCall(id: string): void {
 export function clearAllCalls(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
+
+export function getLatestCall(): CallData | null {
+  const calls = getCalls();
+  return calls.length > 0 ? calls[0] : null;
+}

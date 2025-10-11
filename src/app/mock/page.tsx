@@ -4,23 +4,57 @@ import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Send } from "lucide-react";
+import { CheckCircle2, Send, AlertCircle } from "lucide-react";
+import { getLatestCall } from "@/lib/storage";
 
 interface Objective {
   id: string;
   name: string;
+  description: string;
+  priority: number;
 }
 
 export default function MockPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [objectives, setObjectives] = useState<Objective[]>([]);
 
-  const objectives: Objective[] = [
-    { id: "1", name: "Introduce yourself" },
-    { id: "2", name: "Discuss project timeline" },
-    { id: "3", name: "Address budget concerns" },
-  ];
+  // Load objectives from localStorage on mount
+  useEffect(() => {
+    const latestCall = getLatestCall();
+    if (latestCall?.parsedObjectives && latestCall.parsedObjectives.length > 0) {
+      const objectivesWithIds = latestCall.parsedObjectives.map((obj, idx) => ({
+        id: `obj-${idx}`,
+        name: obj.name,
+        description: obj.description,
+        priority: obj.priority,
+      }));
+      setObjectives(objectivesWithIds);
+    } else {
+      // Fallback to default objectives
+      setObjectives([
+        {
+          id: "obj-0",
+          name: "Introduce yourself",
+          description: "Start the call with a friendly introduction",
+          priority: 1,
+        },
+        {
+          id: "obj-1",
+          name: "Discuss project timeline",
+          description: "Review key milestones and deadlines",
+          priority: 2,
+        },
+        {
+          id: "obj-2",
+          name: "Address budget concerns",
+          description: "Go over financial constraints and requirements",
+          priority: 3,
+        },
+      ]);
+    }
+  }, []);
 
   useEffect(() => {
     const newSocket: Socket = io("http://localhost:3000");
@@ -82,6 +116,7 @@ export default function MockPage() {
         <Card className="p-6 mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
           <h2 className="font-semibold mb-2">How to use:</h2>
           <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
+            <li>Set up objectives on the home page first</li>
             <li>Open the call page in another browser tab or window</li>
             <li>Click the buttons below to complete objectives</li>
             <li>Watch the objectives update in real-time on the call page</li>
@@ -89,57 +124,99 @@ export default function MockPage() {
           </ol>
         </Card>
 
-        {/* Objective triggers */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Trigger Completions</h2>
-          <div className="space-y-3">
-            {objectives.map((objective) => {
-              const isCompleted = completedIds.has(objective.id);
-              return (
-                <div
-                  key={objective.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-background"
-                >
-                  <div className="flex items-center gap-3">
-                    {isCompleted && (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    )}
-                    <div>
-                      <p className="font-medium">{objective.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        ID: {objective.id}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => completeObjective(objective.id)}
-                    disabled={!connected || isCompleted}
-                    className="gap-2"
+        {objectives.length === 0 ? (
+          <Card className="p-6 mb-6 bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+              <div>
+                <h3 className="font-semibold mb-1">No objectives found</h3>
+                <p className="text-sm text-muted-foreground">
+                  Please go to the home page and set up your objectives first, then start a call.
+                </p>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          /* Objective triggers */
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Trigger Completions</h2>
+            <div className="space-y-3">
+              {objectives.map((objective) => {
+                const isCompleted = completedIds.has(objective.id);
+                return (
+                  <div
+                    key={objective.id}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-background"
                   >
-                    <Send className="w-4 h-4" />
-                    Complete
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {isCompleted && (
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{objective.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {objective.description}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            ID: {objective.id}
+                          </span>
+                          <span
+                            className={`
+                              text-xs px-2 py-0.5 rounded-full
+                              ${
+                                objective.priority === 1
+                                  ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
+                                  : objective.priority === 2
+                                  ? "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400"
+                                  : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
+                              }
+                            `}
+                          >
+                            P{objective.priority}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => completeObjective(objective.id)}
+                      disabled={!connected || isCompleted}
+                      className="gap-2 ml-3"
+                    >
+                      <Send className="w-4 h-4" />
+                      Complete
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
 
-          <div className="mt-6 pt-6 border-t">
-            <Button
-              onClick={resetAll}
-              variant="outline"
-              className="w-full"
-              disabled={completedIds.size === 0}
-            >
-              Reset All (Local Only)
-            </Button>
-          </div>
-        </Card>
+            <div className="mt-6 pt-6 border-t">
+              <Button
+                onClick={resetAll}
+                variant="outline"
+                className="w-full"
+                disabled={completedIds.size === 0}
+              >
+                Reset All (Local Only)
+              </Button>
+            </div>
+          </Card>
+        )}
 
-        {/* Event log */}
+        {/* Quick Links */}
         <Card className="p-6 mt-6">
           <h2 className="text-lg font-semibold mb-4">Quick Links</h2>
           <div className="space-y-2">
+            <a
+              href="/"
+              className="block p-3 rounded-lg border hover:bg-accent transition-colors"
+            >
+              <p className="font-medium">Go to Home Page</p>
+              <p className="text-xs text-muted-foreground">
+                Set up new objectives and start a call
+              </p>
+            </a>
             <a
               href="/call"
               target="_blank"

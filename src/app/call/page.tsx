@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
 import { io, Socket } from "socket.io-client";
+import { getLatestCall } from "@/lib/storage";
 
 interface Objective {
   id: string;
@@ -19,29 +20,47 @@ export default function CallPage({
 }) {
   const params = use(searchParams);
   const title = params?.title || "Call";
-  const [objectives, setObjectives] = useState<Objective[]>([
-    {
-      id: "1",
-      name: "Introduce yourself",
-      description: "Start the call with a friendly introduction",
-      priority: 1,
-      completed: false,
-    },
-    {
-      id: "2",
-      name: "Discuss project timeline",
-      description: "Review key milestones and deadlines",
-      priority: 2,
-      completed: false,
-    },
-    {
-      id: "3",
-      name: "Address budget concerns",
-      description: "Go over financial constraints and requirements",
-      priority: 3,
-      completed: false,
-    },
-  ]);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+
+  // Load objectives from localStorage on mount
+  useEffect(() => {
+    const latestCall = getLatestCall();
+    if (latestCall?.parsedObjectives && latestCall.parsedObjectives.length > 0) {
+      const objectivesWithIds = latestCall.parsedObjectives.map((obj, idx) => ({
+        id: `obj-${idx}`,
+        name: obj.name,
+        description: obj.description,
+        priority: obj.priority,
+        completed: false,
+      }));
+      setObjectives(objectivesWithIds);
+    } else {
+      // Fallback to default objectives if none are found
+      setObjectives([
+        {
+          id: "obj-0",
+          name: "Introduce yourself",
+          description: "Start the call with a friendly introduction",
+          priority: 1,
+          completed: false,
+        },
+        {
+          id: "obj-1",
+          name: "Discuss project timeline",
+          description: "Review key milestones and deadlines",
+          priority: 2,
+          completed: false,
+        },
+        {
+          id: "obj-2",
+          name: "Address budget concerns",
+          description: "Go over financial constraints and requirements",
+          priority: 3,
+          completed: false,
+        },
+      ]);
+    }
+  }, []);
 
   useEffect(() => {
     // Connect to Socket.IO server
