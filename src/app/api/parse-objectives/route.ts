@@ -9,8 +9,10 @@ const RequestSchema = z.object({
 });
 
 const Objective = z.object({
-  name: z.string(),
-  description: z.string(),
+  id: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  completed: z.boolean().optional(),
   priority: z.number().min(1).max(5),
 });
 
@@ -32,7 +34,7 @@ Raw Objectives:
 ${objectives}
 
 Return JSON with:
-- objectives: array of objects with {name: string, description: string, priority: number (1-5 where 1 is highest)}`;
+- objectives: array of objects with {id: string, title: string, description: string (optional), completed: boolean (optional), priority: number (1-5 where 1 is highest)}`;
 
     const openai = getOpenAIClient();
     const response = await openai.responses.create({

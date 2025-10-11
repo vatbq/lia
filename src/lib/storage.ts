@@ -5,8 +5,9 @@ export interface CallData {
   objectives: string;
   parsedObjectives: Array<{
     id: string;
-    name: string;
-    description: string;
+    title: string;
+    description?: string;
+    completed?: boolean;
     priority: number;
   }>;
   completedObjectives?: string[];
@@ -15,14 +16,14 @@ export interface CallData {
     id: string;
     title: string;
     description: string;
-    type: 'positive' | 'negative' | 'neutral' | 'warning';
+    type: "positive" | "negative" | "neutral" | "warning";
     timestamp: string;
   }>;
   actionItems?: Array<{
     id: string;
     title: string;
     description: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: "high" | "medium" | "low";
     completed: boolean;
     timestamp: string;
   }>;

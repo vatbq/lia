@@ -42,6 +42,7 @@ export default function CallDetailPage() {
     return 'Low Priority';
   };
 
+
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'positive':
@@ -197,7 +198,7 @@ export default function CallDetailPage() {
                                 <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                               )}
                               <h4 className={`font-semibold text-base ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
-                                {obj.name}
+                                {obj.title}
                               </h4>
                             </div>
                             <div className="flex items-center gap-2">

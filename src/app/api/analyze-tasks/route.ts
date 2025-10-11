@@ -1,7 +1,9 @@
-import { openai } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { io } from 'socket.io-client';
+import { getOpenAIClient } from '@/lib/openai';
+import { openai } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
 
 // Schema to validate input
 const requestSchema = z.object({
@@ -10,6 +12,7 @@ const requestSchema = z.object({
       id: z.string(),
       title: z.string(),
       description: z.string().optional(),
+      priority: z.number().optional(),
     })
   ),
   transcription: z.string(),
@@ -30,18 +33,22 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    console.log(process.env.OPENAI_API_KEY);
-    // Validate the input
+    // Validar el input
     const { tasks, transcription } = requestSchema.parse(body);
 
     // Prepare the context for the AI
     const conversationText = transcription;
 
     const tasksText = tasks
+    .filter((task: any) => task.completed === false)
       .map(
         (task: any) =>
           `- PENDING ${task.id}: ${task.title}${
             task.description ? ` - ${task.description}` : ''
+          }${
+            task.completed !== undefined
+              ? ` (Currently: 'PENDING')`
+              : ''
           }`
       )
       .join('\n');
@@ -74,6 +81,9 @@ You must respond with a JSON with the following structure:
       schema: responseSchema,
       prompt: prompt,
     });
+
+    // Note: Socket emission will be handled by the client after receiving this response
+    console.log('📤 Task analysis completed, client will handle socket emission');
 
     return NextResponse.json(object);
   } catch (error: any) {

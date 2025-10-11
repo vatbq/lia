@@ -71,6 +71,15 @@ app.prepare().then(() => {
       io.emit("action_item_complete", data);
     });
 
+    // Listen for task analysis updates from clients
+    socket.on("update_task_analysis", (data) => {
+      console.log("📥 Received update_task_analysis from client:", socket.id);
+      console.log("   Data:", JSON.stringify(data, null, 2));
+      // Broadcast to all clients with task analysis results
+      io.emit("task_analysis_updated", data);
+      console.log("📤 Broadcasted task_analysis_updated to all clients");
+    });
+
     socket.on("disconnect", () => {
       console.log("Client disconnected:", socket.id);
     });

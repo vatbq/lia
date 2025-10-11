@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useRef } from "react";
-import { CheckCircle2, Circle, Lightbulb, AlertTriangle, CheckCircle, Clock, Info, PhoneOff } from "lucide-react";
+import { CheckCircle2, Circle, Lightbulb, AlertTriangle, CheckCircle, Clock, Info, PhoneOff, Brain } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import { getLatestCall, updateCall } from "@/lib/storage";
@@ -17,13 +17,16 @@ import {
   MicrophoneState,
   useMicrophone,
 } from "@/contexts/microphone-context";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface Objective {
   id: string;
-  name: string;
-  description: string;
+  title: string;
+  description?: string;
+  completed?: boolean;
   priority: number;
-  completed: boolean;
   status?: 'pending' | 'in_progress' | 'completed';
   statusMessage?: string;
 }
@@ -66,6 +69,10 @@ export default function CallPage({
   const [currentCall, setCurrentCall] = useState<any>(null);
   const [isEndingCall, setIsEndingCall] = useState(false);
   const [completedObjectiveIds, setCompletedObjectiveIds] = useState<Set<string>>(new Set());
+  
+  // Task Analysis state
+  const [transcription, setTranscription] = useState('');
+  const [taskAnalysisLoading, setTaskAnalysisLoading] = useState(false);
 
   // Audio transcription state
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
@@ -107,24 +114,24 @@ export default function CallPage({
       setObjectives([
         {
           id: uuidv4(),
-          name: "Introduce yourself",
+          title: "Introduce yourself",
           description: "Start the call with a friendly introduction",
+          completed: false,
           priority: 1,
-          completed: false,
         },
         {
           id: uuidv4(),
-          name: "Discuss project timeline",
+          title: "Discuss project timeline",
           description: "Review key milestones and deadlines",
-          priority: 2,
           completed: false,
+          priority: 2,
         },
         {
           id: uuidv4(),
-          name: "Address budget concerns",
+          title: "Address budget concerns",
           description: "Go over financial constraints and requirements",
-          priority: 3,
           completed: false,
+          priority: 3,
         },
       ]);
     }
@@ -153,7 +160,7 @@ export default function CallPage({
           console.warn("⚠️ Objective ID not found in current objectives:", data.id);
           console.log("Available objective IDs:", prev.map(obj => obj.id));
         } else {
-          console.log("✅ Found objective:", foundObjective.name);
+          console.log("✅ Found objective:", foundObjective.title);
         }
 
         return prev.map((obj) =>
@@ -198,6 +205,43 @@ export default function CallPage({
           item.id === data.id ? { ...item, completed: true } : item
         )
       );
+    });
+
+    newSocket.on("task_analysis_updated", (data: { tasks: Record<string, { completed: boolean; message: string }>; timestamp: string }) => {
+      console.log("🎯 Task analysis updated event received:", data);
+
+      setObjectives((prev) => {
+        return prev.map((obj) => {
+          const taskAnalysis = data.tasks[obj.id];
+          if (taskAnalysis) {
+            // Only update if task is not already completed
+            // Once completed, tasks stay completed
+            if (obj.completed && !taskAnalysis.completed) {
+              return obj; // Keep existing completed state
+            }
+            
+            return {
+              ...obj,
+              completed: taskAnalysis.completed,
+              status: taskAnalysis.completed ? 'completed' : 'pending',
+              statusMessage: taskAnalysis.message
+            };
+          }
+          return obj;
+        });
+      });
+
+      // Update completed objective IDs - only add new completions, never remove
+      setCompletedObjectiveIds((prev) => {
+        const newSet = new Set(prev);
+        Object.entries(data.tasks).forEach(([id, analysis]) => {
+          if (analysis.completed) {
+            newSet.add(id);
+          }
+          // Don't remove from completed set - once completed, stay completed
+        });
+        return newSet;
+      });
     });
 
     newSocket.on("disconnect", () => {
@@ -252,6 +296,7 @@ export default function CallPage({
       if (audioDataCount % 50 === 0) {
         console.log("[CallPage] Sending audio data #", audioDataCount, "Size:", pcm16Data.length);
       }
+      // @ts-ignore
       send(pcm16Data.buffer);
     };
 
@@ -325,6 +370,63 @@ export default function CallPage({
           item.id === id ? { ...item, completed: true } : item
         )
       );
+    }
+  };
+
+  const analyzeTasks = async () => {
+    if (!transcription.trim()) {
+      alert('Please enter a transcription');
+      return;
+    }
+
+    if (objectives.length === 0) {
+      alert('No objectives available to analyze');
+      return;
+    }
+
+    setTaskAnalysisLoading(true);
+    
+    try {
+      const response = await fetch('/api/analyze-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tasks: objectives.map(obj => ({
+            id: obj.id,
+            title: obj.title,
+            description: obj.description,
+            priority: obj.priority,
+            completed: obj.completed
+          })),
+          transcription: transcription
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Task analysis result:', result);
+      
+      // Emit socket event to update all clients
+      if (socket) {
+        socket.emit('update_task_analysis', {
+          tasks: result.tasks,
+          timestamp: new Date().toISOString()
+        });
+        console.log('📤 Task analysis results sent via socket');
+      }
+      
+      alert('Task analysis completed! Check the objectives above for updates.');
+      
+    } catch (error) {
+      console.error('Error analyzing tasks:', error);
+      alert('Failed to analyze tasks. Check console for details.');
+    } finally {
+      setTaskAnalysisLoading(false);
     }
   };
 
@@ -464,6 +566,39 @@ export default function CallPage({
               </div>
             </div>
           )}
+          {/* Task Analysis Section */}
+          <Card className="p-6 mb-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Brain className="w-5 h-5" />
+              Task Analysis
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="transcription">Transcription</Label>
+                <Textarea
+                  id="transcription"
+                  placeholder="Enter conversation transcription to analyze tasks..."
+                  value={transcription}
+                  onChange={(e) => setTranscription(e.target.value)}
+                  className="mt-1"
+                  rows={4}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={analyzeTasks}
+                  disabled={taskAnalysisLoading || !transcription.trim() || objectives.length === 0}
+                  className="gap-2"
+                >
+                  <Brain className="w-4 h-4" />
+                  {taskAnalysisLoading ? 'Analyzing...' : 'Analyze Tasks'}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Uses current objectives ({objectives.length} tasks)
+                </span>
+              </div>
+            </div>
+          </Card>
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Insights Section */}
@@ -631,7 +766,7 @@ export default function CallPage({
                         }
                       `}
                     >
-                      {objective.name}
+                      {objective.title}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
                       {objective.description}

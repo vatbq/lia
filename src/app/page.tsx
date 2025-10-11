@@ -20,8 +20,9 @@ import { saveCall } from "@/lib/storage";
 
 type Objective = {
   id: string;
-  name: string;
-  description: string;
+  title: string;
+  description?: string;
+  completed?: boolean;
   priority: number;
 };
 
@@ -52,21 +53,11 @@ export default function Home() {
 
   // For editing objectives
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Objective>({
-    id: "",
-    name: "",
-    description: "",
-    priority: 1,
-  });
+  const [editForm, setEditForm] = useState<Objective>({ id: "", title: "", description: "", completed: false, priority: 1 });
 
   // For adding new objectives
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newObjective, setNewObjective] = useState<Objective>({
-    id: "",
-    name: "",
-    description: "",
-    priority: 1,
-  });
+  const [newObjective, setNewObjective] = useState<Objective>({ id: "", title: "", description: "", completed: false, priority: 1 });
 
   // Helper to clamp priority between 1 and 5
   function clampPriority(value: string | number): number {
@@ -79,40 +70,44 @@ export default function Home() {
   const mockObjectives: Objective[] = [
     {
       id: uuidv4(),
-      name: "Review Q3 Progress",
+      title: "Review Q3 Progress",
       description: "Assess current progress against Q3 goals and identify gaps",
+      completed: false,
       priority: 1,
     },
     {
       id: uuidv4(),
-      name: "Identify Q4 Features",
+      title: "Identify Q4 Features",
       description: "Select top 3 features to prioritize for Q4 development",
+      completed: false,
       priority: 1,
     },
     {
       id: uuidv4(),
-      name: "Assign Ownership",
-      description:
-        "Assign clear ownership and responsibilities for each Q4 feature",
+      title: "Assign Ownership",
+      description: "Assign clear ownership and responsibilities for each Q4 feature",
+      completed: false,
       priority: 2,
     },
     {
       id: uuidv4(),
-      name: "Set Timelines",
-      description:
-        "Establish realistic timelines and milestones for Q4 deliverables",
+      title: "Set Timelines",
+      description: "Establish realistic timelines and milestones for Q4 deliverables",
+      completed: false,
       priority: 2,
     },
     {
       id: uuidv4(),
-      name: "Resource Allocation",
+      title: "Resource Allocation",
       description: "Discuss and allocate team resources for Q4 initiatives",
+      completed: false,
       priority: 3,
     },
     {
       id: uuidv4(),
-      name: "Success Metrics",
+      title: "Success Metrics",
       description: "Define clear success metrics and KPIs for Q4 goals",
+      completed: false,
       priority: 3,
     },
   ];
@@ -166,7 +161,7 @@ export default function Home() {
   }
 
   function handleAddObjective() {
-    if (!newObjective.name.trim() || !newObjective.description.trim()) {
+    if (!newObjective.title.trim() || !newObjective.description?.trim()) {
       setError("Name and description are required");
       return;
     }
@@ -176,7 +171,7 @@ export default function Home() {
       priority: clampPriority(newObjective.priority),
     };
     setParsedObjectives([...parsedObjectives, clampedObjective]);
-    setNewObjective({ id: "", name: "", description: "", priority: 1 });
+    setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
     setIsAddingNew(false);
     setError(null);
   }
@@ -188,7 +183,7 @@ export default function Home() {
 
   function handleSaveEdit() {
     if (editingId === null) return;
-    if (!editForm.name.trim() || !editForm.description.trim()) {
+    if (!editForm.title.trim() || !editForm.description?.trim()) {
       setError("Name and description are required");
       return;
     }
@@ -204,7 +199,7 @@ export default function Home() {
 
   function handleCancelEdit() {
     setEditingId(null);
-    setEditForm({ id: "", name: "", description: "", priority: 1 });
+    setEditForm({ id: "", title: "", description: "", completed: false, priority: 1 });
   }
 
   function handleDeleteObjective(index: number) {
@@ -283,17 +278,7 @@ export default function Home() {
                 <div className="rounded-md border border-primary p-3 space-y-2">
                   <div>
                     <Label className="text-xs">Name</Label>
-                    <Input
-                      value={newObjective.name}
-                      onChange={(e) =>
-                        setNewObjective({
-                          ...newObjective,
-                          name: e.target.value,
-                        })
-                      }
-                      placeholder="Objective name"
-                      className="mt-1"
-                    />
+                    <Input value={newObjective.title} onChange={(e) => setNewObjective({ ...newObjective, title: e.target.value })} placeholder="Objective title" className="mt-1" />
                   </div>
                   <div>
                     <Label className="text-xs">Description</Label>
@@ -334,12 +319,7 @@ export default function Home() {
                       variant="outline"
                       onClick={() => {
                         setIsAddingNew(false);
-                        setNewObjective({
-                          id: "",
-                          name: "",
-                          description: "",
-                          priority: 1,
-                        });
+                        setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
                       }}
                     >
                       Cancel
@@ -370,16 +350,7 @@ export default function Home() {
                           <div className="space-y-2">
                             <div>
                               <Label className="text-xs">Name</Label>
-                              <Input
-                                value={editForm.name}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    name: e.target.value,
-                                  })
-                                }
-                                className="mt-1"
-                              />
+                              <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="mt-1" />
                             </div>
                             <div>
                               <Label className="text-xs">Description</Label>
@@ -427,15 +398,9 @@ export default function Home() {
                           <div>
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <div className="font-medium text-sm">
-                                  {obj.name}
-                                </div>
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  {obj.description}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Priority: {obj.priority}
-                                </div>
+                                <div className="font-medium text-sm">{obj.title}</div>
+                                <div className="text-sm text-muted-foreground mt-1">{obj.description}</div>
+                                <div className="text-xs text-muted-foreground mt-1">Priority: {obj.priority}</div>
                               </div>
                               <div className="flex gap-1 ml-2">
                                 <Button
@@ -464,17 +429,7 @@ export default function Home() {
                       <div className="rounded-md border border-primary p-3 space-y-2">
                         <div>
                           <Label className="text-xs">Name</Label>
-                          <Input
-                            value={newObjective.name}
-                            onChange={(e) =>
-                              setNewObjective({
-                                ...newObjective,
-                                name: e.target.value,
-                              })
-                            }
-                            placeholder="Objective name"
-                            className="mt-1"
-                          />
+                          <Input value={newObjective.title} onChange={(e) => setNewObjective({ ...newObjective, title: e.target.value })} placeholder="Objective title" className="mt-1" />
                         </div>
                         <div>
                           <Label className="text-xs">Description</Label>
@@ -515,12 +470,7 @@ export default function Home() {
                             variant="outline"
                             onClick={() => {
                               setIsAddingNew(false);
-                              setNewObjective({
-                                id: "",
-                                name: "",
-                                description: "",
-                                priority: 1,
-                              });
+                              setNewObjective({ id: "", title: "", description: "", completed: false, priority: 1 });
                             }}
                           >
                             Cancel

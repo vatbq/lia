@@ -5,13 +5,17 @@ import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Send, AlertCircle, Lightbulb, CheckCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, Send, AlertCircle, Lightbulb, CheckCircle, Brain } from "lucide-react";
 import { getLatestCall } from "@/lib/storage";
 
 interface Objective {
   id: string;
-  name: string;
-  description: string;
+  title: string;
+  description?: string;
+  completed?: boolean;
   priority: number;
 }
 
@@ -39,6 +43,10 @@ export default function MockPage() {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<{ [key: string]: 'pending' | 'in_progress' | 'completed' }>({});
   const [statusMessages, setStatusMessages] = useState<{ [key: string]: string }>({});
+  
+  // Task Analysis state
+  const [transcription, setTranscription] = useState('');
+  const [taskAnalysisLoading, setTaskAnalysisLoading] = useState(false);
 
   // Load objectives from localStorage on mount
   useEffect(() => {
@@ -50,20 +58,23 @@ export default function MockPage() {
       setObjectives([
         {
           id: uuidv4(),
-          name: "Introduce yourself",
+          title: "Introduce yourself",
           description: "Start the call with a friendly introduction",
+          completed: false,
           priority: 1,
         },
         {
           id: uuidv4(),
-          name: "Discuss project timeline",
+          title: "Discuss project timeline",
           description: "Review key milestones and deadlines",
+          completed: false,
           priority: 2,
         },
         {
           id: uuidv4(),
-          name: "Address budget concerns",
+          title: "Address budget concerns",
           description: "Go over financial constraints and requirements",
+          completed: false,
           priority: 3,
         },
       ]);
@@ -81,6 +92,43 @@ export default function MockPage() {
     newSocket.on("disconnect", () => {
       console.log("Mock page disconnected");
       setConnected(false);
+    });
+
+    newSocket.on("task_analysis_updated", (data: { tasks: Record<string, { completed: boolean; message: string }>; timestamp: string }) => {
+      console.log("🎯 Task analysis updated event received on mock page:", data);
+
+      setObjectives((prev) => {
+        return prev.map((obj) => {
+          const taskAnalysis = data.tasks[obj.id];
+          if (taskAnalysis) {
+            // Only update if task is not already completed
+            // Once completed, tasks stay completed
+            if (obj.completed && !taskAnalysis.completed) {
+              return obj; // Keep existing completed state
+            }
+            
+            return {
+              ...obj,
+              completed: taskAnalysis.completed,
+              status: taskAnalysis.completed ? 'completed' : 'pending',
+              statusMessage: taskAnalysis.message
+            };
+          }
+          return obj;
+        });
+      });
+
+      // Update completed objective IDs - only add new completions, never remove
+      setCompletedIds((prev) => {
+        const newSet = new Set(prev);
+        Object.entries(data.tasks).forEach(([id, analysis]) => {
+          if (analysis.completed) {
+            newSet.add(id);
+          }
+          // Don't remove from completed set - once completed, stay completed
+        });
+        return newSet;
+      });
     });
 
     setSocket(newSocket);
@@ -141,6 +189,63 @@ export default function MockPage() {
 
   const resetAll = () => {
     setCompletedIds(new Set());
+  };
+
+  const analyzeTasks = async () => {
+    if (!transcription.trim()) {
+      alert('Please enter a transcription');
+      return;
+    }
+
+    if (objectives.length === 0) {
+      alert('No objectives available to analyze');
+      return;
+    }
+
+    setTaskAnalysisLoading(true);
+    
+    try {
+      const response = await fetch('/api/analyze-tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tasks: objectives.map(obj => ({
+            id: obj.id,
+            title: obj.title,
+            description: obj.description,
+            priority: obj.priority,
+            completed: obj.completed
+          })),
+          transcription: transcription
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Task analysis result:', result);
+      
+      // Emit socket event to update all clients
+      if (socket) {
+        socket.emit('update_task_analysis', {
+          tasks: result.tasks,
+          timestamp: new Date().toISOString()
+        });
+        console.log('📤 Task analysis results sent via socket');
+      }
+      
+      alert('Task analysis completed! Check the objectives above for updates.');
+      
+    } catch (error) {
+      console.error('Error analyzing tasks:', error);
+      alert('Failed to analyze tasks. Check console for details.');
+    } finally {
+      setTaskAnalysisLoading(false);
+    }
   };
 
   // Sample insights and action items for testing
@@ -279,7 +384,7 @@ export default function MockPage() {
                         <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium">{objective.name}</p>
+                        <p className="font-medium">{objective.title}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {objective.description}
                         </p>
@@ -393,6 +498,40 @@ export default function MockPage() {
                 </Button>
               </div>
             ))}
+          </div>
+        </Card>
+
+        {/* Task Analysis */}
+        <Card className="p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Brain className="w-5 h-5" />
+            Task Analysis
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="transcription">Transcription</Label>
+              <Textarea
+                id="transcription"
+                placeholder="Enter conversation transcription to analyze tasks..."
+                value={transcription}
+                onChange={(e) => setTranscription(e.target.value)}
+                className="mt-1"
+                rows={4}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={analyzeTasks}
+                disabled={!connected || taskAnalysisLoading || !transcription.trim() || objectives.length === 0}
+                className="gap-2"
+              >
+                <Brain className="w-4 h-4" />
+                {taskAnalysisLoading ? 'Analyzing...' : 'Analyze Tasks'}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Uses current objectives ({objectives.length} tasks)
+              </span>
+            </div>
           </div>
         </Card>
 
