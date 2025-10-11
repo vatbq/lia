@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const json = await req.json();
     const { context, objectives } = RequestSchema.parse(json);
 
-    const prompt = `You are an assistant helping to prepare a call. Given the user's context and raw objectives, rewrite the objectives as a clear, concise, prioritized checklist. Each item should be actionable and unambiguous. Also extract key constraints and risks.
+    const prompt = `You are an assistant helping to prepare a call. Given the user's context and raw objectives, rewrite the objectives as a clear, concise, prioritized checklist. Each item should be actionable and unambiguous.
 
 Context:
 ${context}
@@ -32,9 +32,7 @@ Raw Objectives:
 ${objectives}
 
 Return JSON with:
-- objectives: array of objects with {name: string, description: string, priority: number (1-5 where 1 is highest)}
-- constraints: array of constraint strings (optional)
-- risks: array of risk strings (optional)`;
+- objectives: array of objects with {name: string, description: string, priority: number (1-5 where 1 is highest)}`;
 
     const openai = getOpenAIClient();
     const response = await openai.responses.create({

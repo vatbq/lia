@@ -8,8 +8,6 @@ export interface CallData {
     description: string;
     priority: number;
   }>;
-  constraints: string[];
-  risks: string[];
   createdAt: string;
 }
 

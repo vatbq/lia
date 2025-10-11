@@ -31,8 +31,6 @@ export default function Home() {
   const [name, setName] = useState("Q4 Strategy Planning");
   const [loading, setLoading] = useState(false);
   const [parsedObjectives, setParsedObjectives] = useState<Objective[]>([]);
-  const [constraints, setConstraints] = useState<string[]>([]);
-  const [risks, setRisks] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // For editing objectives
@@ -50,6 +48,40 @@ export default function Home() {
     return Math.max(1, Math.min(5, num));
   }
 
+  // Mock objectives for default values
+  const mockObjectives: Objective[] = [
+    {
+      name: "Review Q3 Progress",
+      description: "Assess current progress against Q3 goals and identify gaps",
+      priority: 1
+    },
+    {
+      name: "Identify Q4 Features",
+      description: "Select top 3 features to prioritize for Q4 development",
+      priority: 1
+    },
+    {
+      name: "Assign Ownership",
+      description: "Assign clear ownership and responsibilities for each Q4 feature",
+      priority: 2
+    },
+    {
+      name: "Set Timelines",
+      description: "Establish realistic timelines and milestones for Q4 deliverables",
+      priority: 2
+    },
+    {
+      name: "Resource Allocation",
+      description: "Discuss and allocate team resources for Q4 initiatives",
+      priority: 3
+    },
+    {
+      name: "Success Metrics",
+      description: "Define clear success metrics and KPIs for Q4 goals",
+      priority: 3
+    }
+  ];
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -59,6 +91,17 @@ export default function Home() {
       setError(parse.error.issues.map((i) => i.message).join("\n"));
       return;
     }
+
+    // Check if using default values
+    const isDefaultContext = context === "Team meeting to discuss Q4 strategy. Participants: Product Manager, Engineering Lead, and Design Lead. Current state: We're behind on our roadmap and need to prioritize features for the upcoming quarter.";
+    const isDefaultObjectives = objectives === "1. Review current progress on Q3 goals 2. Identify top 3 features for Q4 3. Assign ownership and timelines 4. Discuss resource allocation 5. Set success metrics";
+    
+    if (isDefaultContext && isDefaultObjectives) {
+      // Use mock data for default values
+      setParsedObjectives(mockObjectives);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/parse-objectives", {
@@ -69,8 +112,6 @@ export default function Home() {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || "Request failed");
       setParsedObjectives(data.data.objectives || []);
-      setConstraints(data.data.constraints || []);
-      setRisks(data.data.risks || []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -286,26 +327,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {constraints.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium">Constraints</h4>
-                    <ul className="mt-2 list-disc pl-5 text-sm">
-                      {constraints.map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {risks.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium">Risks</h4>
-                    <ul className="mt-2 list-disc pl-5 text-sm">
-                      {risks.map((r, i) => (
-                        <li key={i}>{r}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </div>
             )}
           </CardContent>
@@ -322,8 +343,6 @@ export default function Home() {
                 context,
                 objectives,
                 parsedObjectives,
-                constraints,
-                risks,
               });
               router.push(`/call?title=${encodeURIComponent(name || "Call")}`);
             }}>

@@ -122,7 +122,7 @@ export default function CallDetailPage() {
           {call.parsedObjectives.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Parsed Objectives</CardTitle>
+                <CardTitle>Objectives</CardTitle>
                 <CardDescription>AI-processed and prioritized objectives</CardDescription>
               </CardHeader>
               <CardContent>
@@ -153,45 +153,6 @@ export default function CallDetailPage() {
             </Card>
           )}
 
-          {/* Constraints Card */}
-          {call.constraints.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Constraints</CardTitle>
-                <CardDescription>Identified limitations and boundaries</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {call.constraints.map((constraint, index) => (
-                    <li key={index} className="flex items-start gap-3 p-3 bg-muted/30 rounded-md">
-                      <span className="text-muted-foreground mt-1">⚠️</span>
-                      <span className="text-sm">{constraint}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Risks Card */}
-          {call.risks.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Risks</CardTitle>
-                <CardDescription>Potential challenges and concerns</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {call.risks.map((risk, index) => (
-                    <li key={index} className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                      <span className="text-red-600 mt-1">🚨</span>
-                      <span className="text-sm text-red-800">{risk}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>

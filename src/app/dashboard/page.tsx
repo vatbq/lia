@@ -106,9 +106,6 @@ export default function DashboardPage() {
                     <div className="text-sm text-muted-foreground">
                       {call.parsedObjectives.length} objectives prepared
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {call.constraints.length + call.risks.length} constraints & risks identified
-                    </div>
                   </div>
                 </CardContent>
               </Card>
