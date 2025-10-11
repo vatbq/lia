@@ -508,8 +508,32 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                 <h1 className="text-3xl font-bold">{title}</h1>
                 <p className="mt-2 text-lg text-muted-foreground">Live insights and action items from your call</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className={`w-2 h-2 rounded-full ${connectionState === ConnectionState.OPEN ? "bg-green-500 animate-pulse" : connectionState === ConnectionState.CONNECTING ? "bg-yellow-500 animate-pulse" : "bg-red-500"}`} />
-                  <span className="text-xs text-muted-foreground">{connectionState === ConnectionState.OPEN ? "Transcription active" : connectionState === ConnectionState.CONNECTING ? "Connecting..." : "Disconnected"}</span>
+                  <div
+                    className={`
+                      w-2 h-2 rounded-full transition-all duration-500 ease-in-out
+                      ${
+                        connectionState === ConnectionState.OPEN
+                          ? "bg-green-500 animate-pulse scale-110 shadow-lg shadow-green-500/50"
+                          : connectionState === ConnectionState.CONNECTING
+                          ? "bg-yellow-500 animate-pulse"
+                          : "bg-red-500 scale-90 opacity-60"
+                      }
+                    `}
+                  />
+                  <span
+                    className={`
+                      text-xs transition-all duration-300
+                      ${
+                        connectionState === ConnectionState.OPEN
+                          ? "text-green-600 dark:text-green-400 font-medium"
+                          : connectionState === ConnectionState.CONNECTING
+                          ? "text-yellow-600 dark:text-yellow-400 animate-pulse"
+                          : "text-muted-foreground"
+                      }
+                    `}
+                  >
+                    {connectionState === ConnectionState.OPEN ? "Transcription active" : connectionState === ConnectionState.CONNECTING ? "Connecting..." : "Disconnected"}
+                  </span>
                 </div>
               </div>
               <Button onClick={endCall} disabled={isEndingCall || !currentCall} className="gap-2 bg-red-600 hover:bg-red-700 text-white">
@@ -521,11 +545,16 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
 
           {/* Transcription Section */}
           {transcriptions.length > 0 && (
-            <div className="mb-6">
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg border p-4">
-                <h3 className="text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300">Live Transcription</h3>
+            <div className="mb-6 animate-in fade-in slide-in-from-top duration-500">
+              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg border p-4 transition-all duration-300 hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700">
+                <h3 className="text-sm font-semibold mb-2 text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  Live Transcription
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                </h3>
                 <div className="prose prose-sm max-w-none">
-                  <p className="text-slate-900 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap">{transcriptions.map((t) => t.text).join(" ")}</p>
+                  <p className="text-slate-900 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap animate-in fade-in duration-700">
+                    {transcriptions.map((t) => t.text).join(" ")}
+                  </p>
                 </div>
               </div>
             </div>
@@ -568,14 +597,30 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {insights.map((insight) => (
-                    <div key={insight.id} className={`p-4 rounded-lg border transition-all duration-300 animate-in slide-in-from-right ${getInsightColor(insight.type)}`}>
+                  {insights.map((insight, index) => (
+                    <div
+                      key={insight.id}
+                      style={{ animationDelay: `${index * 100}ms` }}
+                      className={`
+                        p-4 rounded-lg border
+                        transition-all duration-500 ease-out
+                        animate-in fade-in slide-in-from-right
+                        hover:scale-[1.02] hover:shadow-lg
+                        ${getInsightColor(insight.type)}
+                      `}
+                    >
                       <div className="flex items-start gap-3">
-                        {getInsightIcon(insight.type)}
+                        <div className="animate-in zoom-in duration-300" style={{ animationDelay: `${index * 100 + 150}ms` }}>
+                          {getInsightIcon(insight.type)}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-medium">{insight.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{insight.description}</p>
-                          <div className="flex items-center gap-2 mt-2">
+                          <h3 className="text-base font-medium animate-in fade-in slide-in-from-left duration-300" style={{ animationDelay: `${index * 100 + 200}ms` }}>
+                            {insight.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1 animate-in fade-in duration-500" style={{ animationDelay: `${index * 100 + 300}ms` }}>
+                            {insight.description}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2 animate-in fade-in duration-300" style={{ animationDelay: `${index * 100 + 400}ms` }}>
                             <Clock className="w-3 h-3 text-muted-foreground" />
                             <span className="text-xs text-muted-foreground">{new Date(insight.timestamp).toLocaleTimeString()}</span>
                           </div>
@@ -603,27 +648,47 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {actionItems.map((item) => (
+                  {actionItems.map((item, index) => (
                     <div
                       key={item.id}
-                      className={`p-4 rounded-lg border transition-all duration-300 animate-in slide-in-from-right ${
-                        item.completed ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75" : "bg-background border-border hover:border-primary/50"
-                      }`}
+                      style={{ animationDelay: `${index * 100}ms` }}
+                      className={`
+                        p-4 rounded-lg border
+                        transition-all duration-500 ease-out
+                        animate-in fade-in slide-in-from-right
+                        hover:scale-[1.02] hover:shadow-lg
+                        ${
+                          item.completed
+                            ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 opacity-75 scale-[0.98]"
+                            : "bg-background border-border hover:border-primary/50"
+                        }
+                      `}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5">{item.completed ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Circle className="w-5 h-5 text-muted-foreground" />}</div>
+                        <div className={`mt-0.5 transition-all duration-500 ${item.completed ? "scale-125 rotate-[360deg]" : "hover:scale-110"}`}>
+                          {item.completed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600 drop-shadow-lg" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-muted-foreground transition-colors duration-300" />
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className={`text-base font-medium ${item.completed ? "line-through text-muted-foreground" : ""}`}>{item.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">{item.description || "No description"}</p>
+                          <h3 className={`text-base font-medium transition-all duration-500 ${item.completed ? "line-through text-muted-foreground opacity-75" : ""}`}>{item.title}</h3>
+                          <p className={`text-sm text-muted-foreground mt-1 transition-opacity duration-500 ${item.completed ? "opacity-60" : ""}`}>{item.description || "No description"}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${getActionItemPriorityColor(item.priority)}`}>{item.priority}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full transition-all duration-300 ${getActionItemPriorityColor(item.priority)} ${item.completed ? "opacity-50 scale-90" : ""}`}>
+                              {item.priority}
+                            </span>
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3 text-muted-foreground" />
                               <span className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleTimeString()}</span>
                             </div>
                           </div>
                           {!item.completed && (
-                            <button onClick={() => completeActionItem(item.id)} className="mt-2 text-sm text-primary hover:underline font-medium">
+                            <button
+                              onClick={() => completeActionItem(item.id)}
+                              className="mt-2 text-sm text-primary hover:underline font-medium transition-all duration-200 hover:translate-x-1"
+                            >
                               Mark as complete
                             </button>
                           )}
@@ -643,36 +708,46 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
         <div>
           <h2 className="text-lg font-semibold mb-4">Objectives</h2>
           <div className="space-y-3">
-            {objectives.map((objective) => (
+            {objectives.map((objective, index) => (
               <div
                 key={objective.id}
+                style={{ animationDelay: `${index * 50}ms` }}
                 className={`
-                  p-4 rounded-lg border transition-all duration-500 ease-out
-                  ${objective.completed ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 scale-[0.98] opacity-90" : "bg-background border-border hover:border-primary/50"}
+                  p-4 rounded-lg border transition-all duration-700 ease-out
+                  animate-in fade-in slide-in-from-right
+                  ${
+                    objective.completed
+                      ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 scale-[0.98] opacity-90 shadow-sm shadow-green-500/20"
+                      : "bg-background border-border hover:border-primary/50 hover:shadow-md hover:scale-[1.01]"
+                  }
                 `}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`
-                      mt-0.5 transition-all duration-500
-                      ${objective.completed ? "scale-110" : ""}
+                      mt-0.5 transition-all duration-700 ease-out
+                      ${objective.completed ? "scale-125 rotate-[360deg]" : "hover:scale-110"}
                     `}
                   >
-                    {objective.completed ? <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 animate-in zoom-in duration-300" /> : <Circle className="w-5 h-5 text-muted-foreground" />}
+                    {objective.completed ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 drop-shadow-lg" />
+                    ) : (
+                      <Circle className="w-5 h-5 text-muted-foreground transition-colors duration-300" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3
                       className={`
-                        text-sm font-medium transition-all duration-300
-                        ${objective.completed ? "line-through text-muted-foreground" : ""}
+                        text-sm font-medium transition-all duration-500
+                        ${objective.completed ? "line-through text-muted-foreground opacity-75" : ""}
                       `}
                     >
                       {objective.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-1">{objective.description || "No description"}</p>
+                    <p className={`text-xs text-muted-foreground mt-1 transition-opacity duration-500 ${objective.completed ? "opacity-60" : ""}`}>{objective.description || "No description"}</p>
                     <span
                       className={`
-                        inline-block mt-2 text-xs px-2 py-0.5 rounded-full
+                        inline-block mt-2 text-xs px-2 py-0.5 rounded-full transition-all duration-500
                         ${
                           objective.priority === 1
                             ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
@@ -680,6 +755,7 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
                             ? "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400"
                             : "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400"
                         }
+                        ${objective.completed ? "opacity-50 scale-90" : ""}
                       `}
                     >
                       P{objective.priority}
@@ -691,21 +767,37 @@ export default function CallPage({ searchParams }: { searchParams: Promise<{ tit
           </div>
 
           {/* Progress summary */}
-          <div className="mt-6 pt-6 border-t">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">
+          <div className="mt-6 pt-6 border-t animate-in fade-in slide-in-from-bottom duration-500">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-muted-foreground font-medium">Progress</span>
+              <span className="font-bold text-lg transition-all duration-500 animate-in zoom-in">
                 {objectives.filter((o) => o.completed).length} / {objectives.length}
               </span>
             </div>
-            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+            <div className="mt-2 h-3 bg-muted rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full bg-green-500 transition-all duration-500 ease-out"
+                className={`
+                  h-full rounded-full
+                  transition-all duration-700 ease-out
+                  ${
+                    objectives.filter((o) => o.completed).length === objectives.length
+                      ? "bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-500/50"
+                      : "bg-gradient-to-r from-blue-500 to-green-500"
+                  }
+                `}
                 style={{
                   width: `${(objectives.filter((o) => o.completed).length / objectives.length) * 100}%`,
                 }}
               />
             </div>
+            {objectives.filter((o) => o.completed).length === objectives.length && (
+              <div className="mt-3 text-center animate-in fade-in zoom-in duration-500">
+                <span className="text-sm font-semibold text-green-600 dark:text-green-400 flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  All objectives completed!
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

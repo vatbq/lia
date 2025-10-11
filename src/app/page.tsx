@@ -236,7 +236,7 @@ export default function Home() {
             {step === 2 && (
               <button
                 onClick={() => setStep(1)}
-                className="flex items-center justify-center hover:bg-muted rounded-md p-1 transition-colors"
+                className="flex items-center justify-center hover:bg-muted rounded-md p-1 transition-all hover:scale-110 active:scale-95"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -254,33 +254,33 @@ export default function Home() {
           <div className="flex items-center justify-center gap-2">
             <div className="flex items-center gap-2">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300 ${
                   step === 1
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "bg-primary text-primary-foreground scale-110"
+                    : "bg-muted text-muted-foreground scale-100"
                 }`}
               >
                 1
               </div>
               <span
-                className={`text-sm ${step === 1 ? "font-medium" : "text-muted-foreground"}`}
+                className={`text-sm transition-all duration-300 ${step === 1 ? "font-medium" : "text-muted-foreground"}`}
               >
                 Input
               </span>
             </div>
-            <div className="h-px w-12 bg-border" />
+            <div className="h-px w-12 bg-border transition-colors duration-300" />
             <div className="flex items-center gap-2">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300 ${
                   step === 2
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "bg-primary text-primary-foreground scale-110"
+                    : "bg-muted text-muted-foreground scale-100"
                 }`}
               >
                 2
               </div>
               <span
-                className={`text-sm ${step === 2 ? "font-medium" : "text-muted-foreground"}`}
+                className={`text-sm transition-all duration-300 ${step === 2 ? "font-medium" : "text-muted-foreground"}`}
               >
                 Review
               </span>
@@ -290,10 +290,10 @@ export default function Home() {
 
         {/* Progress Indicator */}
 
-        <div>
+        <div className="relative">
           {/* Step 1: Input Form */}
           {step === 1 && (
-            <>
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <form className="space-y-4" onSubmit={onSubmit}>
                 <div className="grid gap-2">
                   <Label htmlFor="name">Call title (optional)</Label>
@@ -338,21 +338,24 @@ export default function Home() {
               </form>
 
               {error && (
-                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
                   {error}
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {/* Step 2: Review Objectives */}
           {step === 2 && (
-            <>
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="grid gap-4">
                 <div>
                   <div className="space-y-3">
                     {parsedObjectives.map((obj, i) => (
-                      <div key={i} className="rounded-md border p-3">
+                      <div
+                        key={obj.id}
+                        className="rounded-md border p-3 transition-all duration-200 hover:shadow-md hover:border-primary/50"
+                      >
                         {editingId === i ? (
                           <div className="space-y-2">
                             <div>
@@ -429,6 +432,7 @@ export default function Home() {
                                   size="icon"
                                   variant="ghost"
                                   onClick={() => handleStartEdit(i)}
+                                  className="transition-all hover:scale-110 active:scale-95"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
@@ -436,7 +440,7 @@ export default function Home() {
                                   size="icon"
                                   variant="ghost"
                                   onClick={() => handleDeleteObjective(i)}
-                                  className="text-destructive hover:text-destructive"
+                                  className="text-destructive hover:text-destructive transition-all hover:scale-110 active:scale-95"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -448,7 +452,7 @@ export default function Home() {
                     ))}
 
                     {isAddingNew && (
-                      <div className="rounded-md border border-primary p-3 space-y-2">
+                      <div className="rounded-md border border-primary p-3 space-y-2 animate-in fade-in slide-in-from-top-4 duration-300">
                         <div className="flex gap-2">
                           <div className="flex-1">
                             <Label className="text-xs">Name</Label>
@@ -584,11 +588,11 @@ export default function Home() {
               </div>
 
               {error && (
-                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
                   {error}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
